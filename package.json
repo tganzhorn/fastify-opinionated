@@ -1,0 +1,36 @@
+{
+  "name": "fastify-modular",
+  "version": "0.0.1",
+  "description": "Fastify Modular is a lightweight architectural layer for Fastify that introduces a clean, structured way to organize applications using controllers and services — inspired by frameworks like NestJS, but without the overhead.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup src/index.ts --dts",
+    "dev": "tsx src/main.ts"
+  },
+  "keywords": [
+    "fastify",
+    "modular",
+    "controllers",
+    "services"
+  ],
+  "author": "Tobias Ganzhorn",
+  "license": "MIT",
+  "devDependencies": {
+    "@rollup/plugin-swc": "^0.4.0",
+    "@swc/cli": "^0.7.7",
+    "@swc/core": "^1.12.1",
+    "@swc/helpers": "^0.5.17",
+    "@types/node": "^24.0.3",
+    "esbuild-decorators": "^1.0.0",
+    "fastify": "^5.4.0",
+    "reflect-metadata": "^0.2.2",
+    "rollup": "^4.44.0",
+    "rollup-plugin-dts": "^6.2.1",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
