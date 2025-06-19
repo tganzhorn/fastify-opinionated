@@ -18,6 +18,15 @@ export function createInjectorFn(routerCtx: RouterCtx) {
       case "param":
         selectors.push(`ctx.request.params.${param.name}`);
         break;
+      case "body":
+        selectors.push(`ctx.request.body`);
+        break;
+      case "headers":
+        selectors.push("ctx.request.headers");
+        break;
+      case "raw":
+        selectors.push("ctx.request.raw");
+        break;
     }
   }
 

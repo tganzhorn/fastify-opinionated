@@ -1,4 +1,11 @@
-export type Param = RequestParam | ReplyParam | QueryParam | ParamParam;
+export type Param =
+  | BodyParam
+  | RequestParam
+  | ReplyParam
+  | QueryParam
+  | ParamParam
+  | HeadersParam
+  | RawParam;
 
 type RequestParam = {
   type: "req";
@@ -19,6 +26,21 @@ type QueryParam = {
 type ParamParam = {
   type: "param";
   name: string;
+  methodName: string;
+};
+
+type BodyParam = {
+  type: "body";
+  methodName: string;
+};
+
+type HeadersParam = {
+  type: "headers";
+  methodName: string;
+};
+
+type RawParam = {
+  type: "raw";
   methodName: string;
 };
 
@@ -67,6 +89,26 @@ export function Rep(): ParameterDecorator {
     Reflect.defineMetadata(
       `rep:${String(propertyKey)}:${parameterIndex}`,
       "rep",
+      target
+    );
+  };
+}
+
+export function Raw(): ParameterDecorator {
+  return (target, propertyKey, parameterIndex) => {
+    Reflect.defineMetadata(
+      `raw:${String(propertyKey)}:${parameterIndex}`,
+      "raw",
+      target
+    );
+  };
+}
+
+export function Headers(): ParameterDecorator {
+  return (target, propertyKey, parameterIndex) => {
+    Reflect.defineMetadata(
+      `headers:${String(propertyKey)}:${parameterIndex}`,
+      "headers",
       target
     );
   };

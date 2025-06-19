@@ -1,4 +1,4 @@
-import { RouteShorthandOptions } from "fastify";
+import { FastifyRequest, RouteShorthandOptions } from "fastify";
 import type { Param } from "./params.js";
 import { DEPS_CTX_SYMBOL, DepsCtx } from "../depsCtx.js";
 
@@ -39,7 +39,7 @@ export function Controller(
     };
 
     Reflect.defineMetadata(DEPS_CTX_SYMBOL, depsCtx, target);
-    
+
     const keys = Reflect.getMetadataKeys(target.prototype);
 
     const controllerCtx: ControllerCtx = {
@@ -98,6 +98,25 @@ function genericMethod(
             name: Reflect.getMetadata(key, target),
             methodName,
           };
+          break;
+        case "body":
+          params[parameterIndex] = {
+            type: "body",
+            methodName,
+          };
+          break;
+        case "headers":
+          params[parameterIndex] = {
+            type: "headers",
+            methodName,
+          };
+          break;
+        case "raw":
+          params[parameterIndex] = {
+            type: "raw",
+            methodName,
+          };
+          break;
       }
     }
 
@@ -125,7 +144,7 @@ export function Get(path: Path, opts?: RouteShorthandOptions) {
 }
 
 export function Post(path: Path, opts?: RouteShorthandOptions) {
-  return genericMethod(path, "GET", opts);
+  return genericMethod(path, "POST", opts);
 }
 
 export function Put(path: Path, opts?: RouteShorthandOptions) {

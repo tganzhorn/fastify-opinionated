@@ -5,6 +5,8 @@ declare function Query(name: string): ParameterDecorator;
 declare function Parameter(name: string): ParameterDecorator;
 declare function Req(): ParameterDecorator;
 declare function Rep(): ParameterDecorator;
+declare function Raw(): ParameterDecorator;
+declare function Headers(): ParameterDecorator;
 
 type Path = `/${string}`;
 /**
@@ -27,4 +29,4 @@ declare function registerControllers<ControllerType extends new (...args: any[])
     controllers: ControllerType[];
 }): void;
 
-export { Body, Controller, Delete, Get, INJECTABLE_SERVICE_SYMBOL, Parameter, Patch, Post, Put, Query, Rep, Req, Service, registerControllers };
+export { Body, Controller, Delete, Get, Headers, INJECTABLE_SERVICE_SYMBOL, Parameter, Patch, Post, Put, Query, Raw, Rep, Req, Service, registerControllers };

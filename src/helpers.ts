@@ -56,7 +56,7 @@ export function registerControllers<
     for (const [, routerCtx] of routerCtxs.entries()) {
       const injectorFn = createInjectorFn(routerCtx);
 
-      fastify.get(
+      const payload = [
         rootPath + routerCtx.path,
         routerCtx.opts ?? {},
         async (request: any, reply: any) => {
@@ -66,8 +66,26 @@ export function registerControllers<
             controller[routerCtx.propertyKey].bind(controller),
             ctx
           );
-        }
-      );
+        },
+      ] as const;
+
+      switch (routerCtx.method) {
+        case "GET":
+          fastify.get(...payload);
+          break;
+        case "DELETE":
+          fastify.delete(...payload);
+          break;
+        case "PATCH":
+          fastify.patch(...payload);
+          break;
+        case "POST":
+          fastify.post(...payload);
+          break;
+        case "PUT":
+          fastify.put(...payload);
+          break;
+      }
     }
   }
 }
