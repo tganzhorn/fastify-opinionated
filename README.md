@@ -8,6 +8,14 @@ Controllers handle routing and HTTP logic.
 
 Services encapsulate business logic and reusable operations.
 
+## Installation
+
+Install via
+
+```bash
+npm install @tganzhorn/fastify-modular
+```
+
 ## Minimal implementation
 
 Main.ts
