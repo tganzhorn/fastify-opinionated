@@ -1,9 +1,9 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { RouterCtx } from "./controller.js";
+import { RouteCtx } from "./controller.js";
 
 export type Ctx = ReturnType<typeof createCtx>;
 
-export function createCtx(request: FastifyRequest, reply: FastifyReply, routerCtx: RouterCtx) {
+export function createCtx(request: FastifyRequest, reply: FastifyReply, routerCtx: RouteCtx) {
     return {
         request, reply, routerCtx,
     };

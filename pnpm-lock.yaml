@@ -13,6 +13,9 @@ devDependencies:
   '@rollup/plugin-swc':
     specifier: ^0.4.0
     version: 0.4.0(@swc/core@1.12.1)(rollup@4.44.0)
+  '@sinclair/typebox':
+    specifier: ^0.34.35
+    version: 0.34.35
   '@swc/cli':
     specifier: ^0.7.7
     version: 0.7.7(@swc/core@1.12.1)
@@ -760,6 +763,10 @@ packages:
 
   /@sec-ant/readable-stream@0.4.1:
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
+    dev: true
+
+  /@sinclair/typebox@0.34.35:
+    resolution: {integrity: sha512-C6ypdODf2VZkgRT6sFM8E1F8vR+HcffniX0Kp8MsU8PIfrlXbNCBz0jzj17GjdmjTx1OtZzdH8+iALL21UjF5A==}
     dev: true
 
   /@sindresorhus/is@5.6.0:

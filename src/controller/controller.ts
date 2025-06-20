@@ -1,25 +1,27 @@
-import { RouteShorthandOptions } from "fastify";
+import { FastifySchema, RouteShorthandOptions } from "fastify";
 import { DEPS_CTX_SYMBOL, DepsCtx } from "../depsCtx.js";
 import type { Constructable } from "../helpers.js";
 import type { Param } from "./params.js";
 
 export const CONTROLLER_PATH = "controller:path";
 export const CONTROLLER_CONFIG = "controller:config";
+export const ROUTE = "route";
 
-type HTTPRequestMethods = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+type HTTPRequestMethods = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ALL";
 
 type Path = `/${string}`;
 
 export type ControllerCtx = {
   rootPath: string;
-  routerCtxs: Map<string, RouterCtx>;
+  routerCtxs: Map<string, RouteCtx>;
 };
 
-export type RouterCtx = {
+export type RouteCtx = {
   path: string;
   method: HTTPRequestMethods;
   propertyKey: string;
   opts?: RouteShorthandOptions;
+  schema?: FastifySchema;
   call: (...args: any[]) => any;
   params: Param[];
 };
@@ -55,6 +57,24 @@ export function Controller(
           newKey,
           Reflect.getMetadata(key, target.prototype)
         );
+      }
+    }
+
+    // Has to be executed after generating routeCtx's
+    for (const key of keys) {
+      if (key.startsWith(ROUTE)) {
+        if (key.startsWith(`${ROUTE}:schema`)) {
+          const newKey = key.split(":").slice(-1)[0];
+          if (!controllerCtx.routerCtxs.has(newKey)) {
+            console.warn(`${key} has no route registered!`);
+            continue;
+          }
+
+          controllerCtx.routerCtxs.get(newKey)!.schema = Reflect.getMetadata(
+            key,
+            target.prototype
+          );
+        }
       }
     }
 
@@ -121,7 +141,7 @@ function genericMethod(
       }
     }
 
-    const routerCtx: RouterCtx = {
+    const routerCtx: RouteCtx = {
       path,
       method,
       propertyKey,
@@ -158,4 +178,8 @@ export function Delete(path: Path, opts?: RouteShorthandOptions) {
 
 export function Patch(path: Path, opts?: RouteShorthandOptions) {
   return genericMethod(path, "PATCH", opts);
+}
+
+export function All(path: Path, opts?: RouteShorthandOptions) {
+  return genericMethod(path, "ALL", opts);
 }

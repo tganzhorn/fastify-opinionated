@@ -1,7 +1,7 @@
-import { RouterCtx } from "./controller.js";
+import { RouteCtx } from "./controller.js";
 import { Ctx } from "./ctx.js";
 
-export function createInjectorFn(routerCtx: RouterCtx) {
+export function createInjectorFn(routerCtx: RouteCtx) {
   const selectors: string[] = [];
 
   for (const param of routerCtx.params) {

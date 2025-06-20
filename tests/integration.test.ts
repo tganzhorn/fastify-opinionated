@@ -1,5 +1,5 @@
 import { describe, it } from "node:test";
-import Fastify, { InjectOptions } from "fastify";
+import Fastify, { InjectOptions, LightMyRequestResponse } from "fastify";
 import {
   Controller,
   Get,
@@ -14,12 +14,16 @@ import {
   Raw,
   Rep,
   Req,
+  Schema,
   Service,
+  All,
   registerControllers,
 } from "../dist/index.js";
+// } from "../src/index"
 import assert from "node:assert";
+import { Type } from "@sinclair/typebox";
 
-describe("Test fastify integration", async () => {
+describe("Integration tests", async () => {
   const fastify = Fastify();
 
   @Service([])
@@ -29,11 +33,50 @@ describe("Test fastify integration", async () => {
     getGreeting() {
       return "Hello, world!";
     }
+
+    private counter = 0;
+    increment() {
+      return ++this.counter;
+    }
   }
 
-  @Controller("/test", [TestService])
+  @Service([])
+  class TestService2 {
+    constructor() {}
+
+    private counter = 0;
+
+    increment() {
+      return ++this.counter;
+    }
+
+    initialized = false;
+
+    async onServiceInit() {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 400);
+      });
+
+      this.initialized = true;
+    }
+  }
+
+  @Controller("/test", [TestService, TestService2])
   class TestController {
-    constructor(private testService: TestService) {}
+    constructor(
+      private testService: TestService,
+      private testService2: TestService2
+    ) {}
+
+    @Get("/increment")
+    async increment() {
+      return this.testService.increment();
+    }
+
+    @Get("/increment_per_request")
+    async incrementPerRequest() {
+      return this.testService2.increment();
+    }
 
     @Get("/:id")
     async testId(@Parameter("id") id: string) {
@@ -84,12 +127,28 @@ describe("Test fastify integration", async () => {
     async headers(@Headers() headers: { authorization: string }) {
       return headers.authorization;
     }
+
+    @Post("/schema")
+    @Schema({ body: Type.Object({ test: Type.String() }) })
+    async schema(@Body() body: { test: "abc" }) {
+      return body;
+    }
+
+    @All("/all")
+    async all() {
+      return "all";
+    }
+
+    @All("/async_init")
+    async asyncInit() {
+      return this.testService2.initialized;
+    }
   }
 
-  registerControllers(fastify, { controllers: [TestController] });
+  await registerControllers(fastify, { controllers: [TestController] });
 
   const promisifiedInject = async (opts: InjectOptions) => {
-    return new Promise((resolve, reject) => {
+    return new Promise<LightMyRequestResponse>((resolve, reject) => {
       fastify.inject(opts, (error, response) => {
         resolve(response);
         reject(error);
@@ -146,14 +205,73 @@ describe("Test fastify integration", async () => {
     assert.deepStrictEqual(response?.body, "abc");
   });
 
-  for (const method of ["GET", "POST", "PUT", "PATCH", "DELETE"] as const) {
-    await it(`should have ${method} router`, async () => {
-      const response = await promisifiedInject({
-        method: method,
-        url: `/test/${method.toLowerCase()}`,
-      });
+  await it("should throw an error because of wrong schema", async () => {
+    const response = await promisifiedInject({
+      method: "POST",
+      url: "/test/schema",
+      body: { noTest: 0 },
+    });
 
-      assert.strictEqual(response.body, method.toLowerCase());
+    assert.strictEqual(response.statusCode, 400);
+  });
+
+  await it("service should be a singleton", async () => {
+    const response = await promisifiedInject({
+      method: "GET",
+      url: "/test/increment",
+    });
+
+    assert.strictEqual(response.body, "1");
+
+    const response2 = await promisifiedInject({
+      method: "GET",
+      url: "/test/increment",
+    });
+
+    assert.strictEqual(response2.body, "2");
+  });
+
+  await it("service should be initialized async", async () => {
+    const response = await promisifiedInject({
+      method: "GET",
+      url: "/test/async_init",
+    });
+
+    assert.strictEqual(response.body, "true");
+  });
+
+  for (const method of [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "ALL",
+  ] as const) {
+    await it(`should have ${method} router`, async () => {
+      if (method === "ALL") {
+        for (const method of [
+          "GET",
+          "POST",
+          "PUT",
+          "PATCH",
+          "DELETE",
+        ] as const) {
+          const response = await promisifiedInject({
+            method,
+            url: "/test/all",
+          });
+
+          assert.strictEqual(response.body, "all");
+        }
+      } else {
+        const response = await promisifiedInject({
+          method: method,
+          url: `/test/${method.toLowerCase()}`,
+        });
+
+        assert.strictEqual(response.body, method.toLowerCase());
+      }
     });
   }
 });

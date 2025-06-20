@@ -6,38 +6,43 @@ import { DEPS_CTX_SYMBOL } from "./depsCtx.js";
 
 export type Constructable = new (...args: any[]) => any;
 
-function buildControllers<ControllerType extends new (...args: any[]) => any>(
-  controllers: ControllerType[]
-): InstanceType<ControllerType>[] {
+async function buildControllers<
+  ControllerType extends new (...args: any[]) => any
+>(controllers: ControllerType[]): Promise<InstanceType<ControllerType>[]> {
   const instanceMap = new Map<any, any>(); // Cache of already created services
   const controllerInstances: any[] = [];
 
   for (const Controller of controllers) {
-    const controllerInstance = instantiateWithDeps(Controller, instanceMap);
+    const controllerInstance = await instantiateWithDeps(
+      Controller,
+      instanceMap
+    );
     controllerInstances.push(controllerInstance);
   }
 
   return controllerInstances;
 }
 
-function instantiateWithDeps<T>(
+async function instantiateWithDeps<T>(
   target: new (...args: any[]) => T,
   instanceMap: Map<any, any>
-): T {
+): Promise<T> {
   if (instanceMap.has(target)) {
     return instanceMap.get(target);
   }
 
   const { deps } = Reflect.getMetadata(DEPS_CTX_SYMBOL, target) || [];
-  const dependencies = deps.map((dep: any) =>
-    instantiateWithDeps(dep, instanceMap)
+  const dependencies = await Promise.all(
+    deps.map((dep: any) => instantiateWithDeps(dep, instanceMap))
   );
   const instance = new target(...dependencies);
+  if ("onServiceInit" in (instance as object))
+    await (instance as any).onServiceInit();
   instanceMap.set(target, instance);
   return instance;
 }
 
-export function registerControllers<
+export async function registerControllers<
   ControllerType extends new (...args: any[]) => any
 >(
   fastify: FastifyInstance,
@@ -47,7 +52,7 @@ export function registerControllers<
     controllers: ControllerType[];
   }
 ) {
-  const builtControllers = buildControllers(controllers);
+  const builtControllers = await buildControllers(controllers);
 
   for (const controller of builtControllers) {
     const { routerCtxs, rootPath } = Reflect.getMetadata(
@@ -60,7 +65,14 @@ export function registerControllers<
 
       const payload = [
         rootPath + routerCtx.path,
-        routerCtx.opts ?? {},
+        routerCtx.opts
+          ? {
+              ...routerCtx.opts,
+              schema: routerCtx.schema,
+            }
+          : {
+              schema: routerCtx.schema,
+            },
         async (request: any, reply: any) => {
           const ctx = createCtx(request, reply, routerCtx);
 
@@ -86,6 +98,9 @@ export function registerControllers<
           break;
         case "PUT":
           fastify.put(...payload);
+          break;
+        case "ALL":
+          fastify.all(...payload);
           break;
       }
     }

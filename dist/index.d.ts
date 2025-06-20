@@ -1,9 +1,9 @@
-import { FastifyInstance, RouteShorthandOptions } from 'fastify';
+import { FastifyInstance, RouteShorthandOptions, FastifySchema } from 'fastify';
 
 type Constructable = new (...args: any[]) => any;
 declare function registerControllers<ControllerType extends new (...args: any[]) => any>(fastify: FastifyInstance, { controllers, }: {
     controllers: ControllerType[];
-}): void;
+}): Promise<void>;
 
 declare function Body(): ParameterDecorator;
 declare function Query(name: string): ParameterDecorator;
@@ -26,8 +26,14 @@ declare function Post(path: Path, opts?: RouteShorthandOptions): (target: object
 declare function Put(path: Path, opts?: RouteShorthandOptions): (target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<(...params: any[]) => any>) => void;
 declare function Delete(path: Path, opts?: RouteShorthandOptions): (target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<(...params: any[]) => any>) => void;
 declare function Patch(path: Path, opts?: RouteShorthandOptions): (target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<(...params: any[]) => any>) => void;
+declare function All(path: Path, opts?: RouteShorthandOptions): (target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<(...params: any[]) => any>) => void;
+
+declare function Schema(schema: FastifySchema): MethodDecorator;
 
 declare const INJECTABLE_SERVICE_SYMBOL: unique symbol;
 declare function Service(deps: Constructable[]): ClassDecorator;
+interface OnServiceInit {
+    onServiceInit: () => Promise<void>;
+}
 
-export { Body, type Constructable, Controller, Delete, Get, Headers, INJECTABLE_SERVICE_SYMBOL, Parameter, Patch, Post, Put, Query, Raw, Rep, Req, Service, registerControllers };
+export { All, Body, type Constructable, Controller, Delete, Get, Headers, INJECTABLE_SERVICE_SYMBOL, type OnServiceInit, Parameter, Patch, Post, Put, Query, Raw, Rep, Req, Schema, Service, registerControllers };
