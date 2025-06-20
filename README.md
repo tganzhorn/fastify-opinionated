@@ -112,7 +112,7 @@ pnpm fastify-modular generate
 
 ### Settings
 
-Create a .fastify-modular.rc.
+Create a .fastify-modular.rc.json
 
 ```
 {
