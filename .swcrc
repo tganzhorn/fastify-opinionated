@@ -12,7 +12,8 @@
       "decoratorsBeforeExport": true,
       "topLevelAwait": false,
       "importMeta": true,
-      "preserveAllComments": false
+      "preserveAllComments": false,
+      
     },
     "transform": {
       "legacyDecorator": true,

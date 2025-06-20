@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "root": {
+      "type": "string",
+      "description": "This describes where your files are located e.g. in / or /src",
+      "default": "/src"
+    }
+  },
+  "required": ["root"]
+}

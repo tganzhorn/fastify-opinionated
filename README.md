@@ -103,3 +103,19 @@ export class TestService {
 ```
 
 ## Code Generator
+
+### Generate components 
+
+```
+pnpm fastify-modular generate
+```
+
+### Settings
+
+Create a .fastify-modular.rc
+
+```
+{
+  
+}
+```
