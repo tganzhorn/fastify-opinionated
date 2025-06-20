@@ -4,6 +4,8 @@ import { createCtx } from "./controller/ctx.js";
 import { createInjectorFn } from "./controller/injector.js";
 import { DEPS_CTX_SYMBOL } from "./depsCtx.js";
 
+export type Constructable = new (...args: any[]) => any;
+
 function buildControllers<ControllerType extends new (...args: any[]) => any>(
   controllers: ControllerType[]
 ): InstanceType<ControllerType>[] {

@@ -101,3 +101,5 @@ export class TestService {
   }
 }
 ```
+
+## Code Generator

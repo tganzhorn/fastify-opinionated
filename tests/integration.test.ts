@@ -1,5 +1,5 @@
 import { describe, it } from "node:test";
-import Fastify, { HTTPMethods, InjectOptions } from "fastify";
+import Fastify, { InjectOptions } from "fastify";
 import {
   Controller,
   Get,
@@ -18,7 +18,6 @@ import {
   registerControllers,
 } from "../dist/index.js";
 import assert from "node:assert";
-import { promisify } from "node:util";
 
 describe("Test fastify integration", async () => {
   const fastify = Fastify();
@@ -73,17 +72,17 @@ describe("Test fastify integration", async () => {
 
     @Get("/service")
     async _service() {
-        return "service";
+      return "service";
     }
 
     @Post("/body")
-    async body(@Body() body: { test: "abc"}) {
-        return body;
+    async body(@Body() body: { test: "abc" }) {
+      return body;
     }
 
     @Post("/headers")
-    async headers(@Headers() headers: { authorization: string}) {
-        return headers.authorization;
+    async headers(@Headers() headers: { authorization: string }) {
+      return headers.authorization;
     }
   }
 
@@ -129,7 +128,7 @@ describe("Test fastify integration", async () => {
     const response = await promisifiedInject({
       method: "POST",
       url: "/test/body",
-      body: { test: "abc" }
+      body: { test: "abc" },
     });
 
     assert.deepStrictEqual(JSON.parse(response?.body), { test: "abc" });
@@ -140,8 +139,8 @@ describe("Test fastify integration", async () => {
       method: "POST",
       url: "/test/headers",
       headers: {
-        authorization: "abc"
-      }
+        authorization: "abc",
+      },
     });
 
     assert.deepStrictEqual(response?.body, "abc");

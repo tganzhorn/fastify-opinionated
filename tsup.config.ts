@@ -14,5 +14,5 @@ export const tsup: Options = {
   clean: true,
   treeshake: false,
   esbuildPlugins: [esbuildDecorators()],
-  entryPoints: ["src/index.ts"],
+  entryPoints: ["src/index.ts", "src/templates/generate.ts"],
 };

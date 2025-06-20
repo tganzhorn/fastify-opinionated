@@ -1,6 +1,7 @@
-import { FastifyRequest, RouteShorthandOptions } from "fastify";
-import type { Param } from "./params.js";
+import { RouteShorthandOptions } from "fastify";
 import { DEPS_CTX_SYMBOL, DepsCtx } from "../depsCtx.js";
+import type { Constructable } from "../helpers.js";
+import type { Param } from "./params.js";
 
 export const CONTROLLER_PATH = "controller:path";
 export const CONTROLLER_CONFIG = "controller:config";
@@ -31,7 +32,7 @@ export type RouterCtx = {
  */
 export function Controller(
   rootPath: Path,
-  deps: NewableFunction[]
+  deps: Constructable[]
 ): ClassDecorator {
   return (target) => {
     const depsCtx: DepsCtx = {

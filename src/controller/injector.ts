@@ -27,6 +27,8 @@ export function createInjectorFn(routerCtx: RouterCtx) {
       case "raw":
         selectors.push("ctx.request.raw");
         break;
+      default:
+        throw new Error(`No selector for "${JSON.stringify(param)}" found!`);
     }
   }
 
