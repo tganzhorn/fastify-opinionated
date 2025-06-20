@@ -104,7 +104,7 @@ export class TestService {
 
 ## Code Generator
 
-### Generate components 
+### Generate components
 
 ```
 pnpm fastify-modular generate
@@ -112,10 +112,13 @@ pnpm fastify-modular generate
 
 ### Settings
 
-Create a .fastify-modular.rc
+Create a .fastify-modular.rc.
 
 ```
 {
-  
+ "$schema": "https://raw.githubusercontent.com/tganzhorn/fastify-opinionated/refs/heads/main/fastify-modular.rc.schema.json",
+ "root": "/src"
 }
 ```
+
+In it you can change where your source files will be generated.

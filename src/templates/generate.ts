@@ -1,4 +1,6 @@
+import { readFile } from "fs/promises";
 import nodePlop from "node-plop";
+import { join, sep } from "path";
 
 function uncapitalize(word: string) {
   return word.charAt(0).toLowerCase() + word.slice(1);
@@ -25,6 +27,19 @@ class {{name}}Service {
 (async () => {
   const plop = await nodePlop();
 
+  let config: { root?: string; createSubFolders?: boolean } = {
+    root: "/src",
+    createSubFolders: true,
+  };
+
+  try {
+    const conf = JSON.parse(
+      (await readFile(".fastify-modular.rc.json")).toString()
+    );
+
+    config = conf;
+  } catch (e) {}
+
   const generator = plop.setGenerator("component", {
     description: "Generate component.",
     prompts: [
@@ -43,11 +58,19 @@ class {{name}}Service {
     actions: function (answers) {
       if (!answers) throw new Error("Something went wrong!");
 
+      const path =
+        config.createSubFolders ?? true
+          ? [config.root ?? "/src", "{{lname}}"]
+          : [config.root ?? "/src"];
+
       if (answers.type === "controller") {
         return [
           {
             type: "add",
-            path: "src/{{lname}}/{{lname}}.controller.ts",
+            path: join(...path, "{{lname}}.controller.ts")
+              .split(sep)
+              .filter((s) => s.length !== 0)
+              .join("/"),
             data: {
               name: answers.name,
               lname: uncapitalize(answers.name),
@@ -60,7 +83,15 @@ class {{name}}Service {
       return [
         {
           type: "add",
-          path: "src/{{lname}}/{{lname}}.service.ts",
+          path: join(
+            ...path,
+            config.root ?? "/src",
+            "{{lname}}",
+            "{{lname}}.service.ts"
+          )
+            .split(sep)
+            .filter((s) => s.length !== 0)
+            .join("/"),
           data: {
             name: answers.name,
             lname: uncapitalize(answers.name),

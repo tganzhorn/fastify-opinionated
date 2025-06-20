@@ -6,7 +6,11 @@
       "type": "string",
       "description": "This describes where your files are located e.g. in / or /src",
       "default": "/src"
+    },
+    "createSubFolders": {
+      "type": "boolean",
+      "description": "Whether to create subfolders for controllers and services.",
+      "default": true
     }
-  },
-  "required": ["root"]
+  }
 }
