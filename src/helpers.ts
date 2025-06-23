@@ -6,43 +6,40 @@ import { DEPS_CTX_SYMBOL } from "./depsCtx.js";
 
 export type Constructable = new (...args: any[]) => any;
 
-async function buildControllers<
-  ControllerType extends new (...args: any[]) => any
->(controllers: ControllerType[]): Promise<InstanceType<ControllerType>[]> {
+function buildControllers<ControllerType extends new (...args: any[]) => any>(
+  controllers: ControllerType[]
+): InstanceType<ControllerType>[] {
   const instanceMap = new Map<any, any>(); // Cache of already created services
   const controllerInstances: any[] = [];
 
   for (const Controller of controllers) {
-    const controllerInstance = await instantiateWithDeps(
-      Controller,
-      instanceMap
-    );
+    const controllerInstance = instantiateWithDeps(Controller, instanceMap);
     controllerInstances.push(controllerInstance);
   }
 
   return controllerInstances;
 }
 
-async function instantiateWithDeps<T>(
+function instantiateWithDeps<T>(
   target: new (...args: any[]) => T,
   instanceMap: Map<any, any>
-): Promise<T> {
+): T {
   if (instanceMap.has(target)) {
     return instanceMap.get(target);
   }
 
   const { deps } = Reflect.getMetadata(DEPS_CTX_SYMBOL, target) || [];
-  const dependencies = await Promise.all(
-    deps.map((dep: any) => instantiateWithDeps(dep, instanceMap))
+  const dependencies = deps.map((dep: any) =>
+    instantiateWithDeps(dep, instanceMap)
   );
   const instance = new target(...dependencies);
   if ("onServiceInit" in (instance as object))
-    await (instance as any).onServiceInit();
+    (instance as any).onServiceInit();
   instanceMap.set(target, instance);
   return instance;
 }
 
-export async function registerControllers<
+export function registerControllers<
   ControllerType extends new (...args: any[]) => any
 >(
   fastify: FastifyInstance,
@@ -52,7 +49,7 @@ export async function registerControllers<
     controllers: ControllerType[];
   }
 ) {
-  const builtControllers = await buildControllers(controllers);
+  const builtControllers = buildControllers(controllers);
 
   for (const controller of builtControllers) {
     const { routerCtxs, rootPath } = Reflect.getMetadata(

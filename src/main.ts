@@ -10,6 +10,9 @@ import {
   Parameter,
 } from "./index.js";
 
+import fastifySwagger from "@fastify/swagger";
+import fastifySwaggerUi from "@fastify/swagger-ui";
+
 const fastify = Fastify({
   logger: true,
 });
@@ -64,11 +67,59 @@ export class FastifyRouter {
   }
 }
 
-registerControllers(fastify, { controllers: [FastifyRouter] });
-
 (async () => {
-  await fastify.ready();
+  // await registerControllers(fastify, { controllers: [FastifyRouter] });
 
+  fastify.get("/ping", {
+    schema: {
+      response: {
+        204: {}
+      }
+    }
+  }, async (request, reply) => {
+
+  })
+
+  fastify.register(fastifySwagger, {
+    openapi: {
+      openapi: "3.0.0",
+      info: {
+        title: "FHH VR - Backend API",
+        description: "This is the backend api for the FHHVR Project.",
+        // version: json.version,
+        version: "0",
+      },
+      servers: [
+        {
+          url: "http://localhost:5000",
+          description: "Development server",
+        },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+          },
+        },
+      },
+      security: [],
+    },
+  });
+
+  fastify.register(fastifySwaggerUi, {
+    routePrefix: "/docs",
+    uiConfig: {
+      docExpansion: "list",
+      deepLinking: false,
+    },
+    staticCSP: true,
+    transformSpecificationClone: true,
+  });
+
+  await fastify.ready();
+  fastify.swagger();
   await fastify.listen({
     port: 5000,
   });

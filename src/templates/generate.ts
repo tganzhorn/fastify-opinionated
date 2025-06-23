@@ -2,6 +2,10 @@ import { readFile } from "fs/promises";
 import nodePlop from "node-plop";
 import { join, sep } from "path";
 
+function capitalize(word: string) {
+  return word.charAt(0).toLowerCase() + word.slice(1);
+}
+
 function uncapitalize(word: string) {
   return word.charAt(0).toLowerCase() + word.slice(1);
 }
@@ -72,7 +76,7 @@ class {{name}}Service {
               .filter((s) => s.length !== 0)
               .join("/"),
             data: {
-              name: answers.name,
+              name: capitalize(answers.name),
               lname: uncapitalize(answers.name),
             },
             template: ControllerTemplate,
@@ -83,17 +87,12 @@ class {{name}}Service {
       return [
         {
           type: "add",
-          path: join(
-            ...path,
-            config.root ?? "/src",
-            "{{lname}}",
-            "{{lname}}.service.ts"
-          )
+          path: join(...path, "{{lname}}.service.ts")
             .split(sep)
             .filter((s) => s.length !== 0)
             .join("/"),
           data: {
-            name: answers.name,
+            name: capitalize(answers.name),
             lname: uncapitalize(answers.name),
           },
           template: ServiceTemplate,

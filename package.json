@@ -1,6 +1,6 @@
 {
   "name": "@tganzhorn/fastify-modular",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "repository": {
     "type": "git",
     "url": "https://github.com/tganzhorn/fastify-opinionated.git"
@@ -27,6 +27,8 @@
   "author": "Tobias Ganzhorn",
   "license": "MIT",
   "devDependencies": {
+    "@fastify/swagger": "^9.5.1",
+    "@fastify/swagger-ui": "^5.2.3",
     "@rollup/plugin-swc": "^0.4.0",
     "@sinclair/typebox": "^0.34.35",
     "@swc/cli": "^0.7.7",
