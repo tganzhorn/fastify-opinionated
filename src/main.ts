@@ -8,6 +8,7 @@ import {
   Rep,
   Query,
   Parameter,
+  Context,
 } from "./index.js";
 
 import fastifySwagger from "@fastify/swagger";
@@ -56,7 +57,8 @@ export class FastifyRouter {
     @Req() request: FastifyRequest,
     @Rep() reply: FastifyReply,
     @Query("info") info: string,
-    @Parameter("id") id: string
+    @Parameter("id") id: string,
+    @Context() context: any
   ) {
     return reply.send({
       ok: true,
@@ -68,17 +70,19 @@ export class FastifyRouter {
 }
 
 (async () => {
-  // await registerControllers(fastify, { controllers: [FastifyRouter] });
+  registerControllers(fastify, { controllers: [FastifyRouter] });
 
-  fastify.get("/ping", {
-    schema: {
-      response: {
-        204: {}
-      }
-    }
-  }, async (request, reply) => {
-
-  })
+  fastify.get(
+    "/ping",
+    {
+      schema: {
+        response: {
+          204: {},
+        },
+      },
+    },
+    async (request, reply) => {}
+  );
 
   fastify.register(fastifySwagger, {
     openapi: {

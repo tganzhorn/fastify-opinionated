@@ -1,6 +1,11 @@
-import { FastifyInstance, FastifySchema } from "fastify";
-import { ControllerCtx } from "./controller/controller.js";
-import { createCtx } from "./controller/ctx.js";
+import {
+  FastifyInstance,
+  FastifyReply,
+  FastifyRequest,
+  FastifySchema,
+} from "fastify";
+import { ControllerCtx, RouteCtx } from "./controller/controller.js";
+import { createCtx, Ctx } from "./controller/ctx.js";
 import { createInjectorFn } from "./controller/injector.js";
 import { DEPS_CTX_SYMBOL } from "./depsCtx.js";
 
@@ -40,13 +45,20 @@ function instantiateWithDeps<T>(
 }
 
 export function registerControllers<
-  ControllerType extends new (...args: any[]) => any
+  ControllerType extends new (...args: any[]) => any,
+  CustomContext extends Ctx
 >(
   fastify: FastifyInstance,
   {
     controllers,
+    createCustomContext,
   }: {
     controllers: ControllerType[];
+    createCustomContext?: (
+      request: FastifyRequest,
+      reply: FastifyReply,
+      routeCtx: RouteCtx
+    ) => CustomContext;
   }
 ) {
   const builtControllers = buildControllers(controllers);
@@ -60,6 +72,12 @@ export function registerControllers<
 
       for (const [, routerCtx] of routerCtxs.entries()) {
         const injectorFn = createInjectorFn(routerCtx);
+
+        const createCtxFn =
+          (routerCtx.params.findIndex((param) => param.type === "context") !==
+          -1
+            ? createCustomContext
+            : null) ?? createCtx;
 
         const payload = [
           rootPath + (routerCtx.path === "/" ? "" : routerCtx.path),
@@ -78,7 +96,7 @@ export function registerControllers<
                 } as FastifySchema,
               },
           async (request: any, reply: any) => {
-            const ctx = createCtx(request, reply, routerCtx);
+            const ctx = createCtxFn(request, reply, routerCtx);
 
             return injectorFn(
               controller[routerCtx.propertyKey].bind(controller),

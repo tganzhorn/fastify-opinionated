@@ -138,6 +138,12 @@ function genericMethod(
             methodName,
           };
           break;
+        case "context":
+          params[parameterIndex] = {
+            type: "raw",
+            methodName,
+          };
+          break;
       }
     }
 

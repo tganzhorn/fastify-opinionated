@@ -27,11 +27,14 @@ export function createInjectorFn(routerCtx: RouteCtx) {
       case "raw":
         selectors.push("ctx.request.raw");
         break;
+      case "context":
+        selectors.push("ctx");
+        break;
       default:
         throw new Error(`No selector for "${JSON.stringify(param)}" found!`);
     }
   }
-
+  
   const code = `
   return function(fn, ctx) {
     return fn(${selectors.join(",")});

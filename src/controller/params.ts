@@ -5,7 +5,8 @@ export type Param =
   | QueryParam
   | ParamParam
   | HeadersParam
-  | RawParam;
+  | RawParam
+  | ContextParam;
 
 type RequestParam = {
   type: "req";
@@ -41,6 +42,11 @@ type HeadersParam = {
 
 type RawParam = {
   type: "raw";
+  methodName: string;
+};
+
+type ContextParam = {
+  type: "context";
   methodName: string;
 };
 
@@ -109,6 +115,16 @@ export function Headers(): ParameterDecorator {
     Reflect.defineMetadata(
       `headers:${String(propertyKey)}:${parameterIndex}`,
       "headers",
+      target
+    );
+  };
+}
+
+export function Context(): ParameterDecorator {
+  return (target, propertyKey, parameterIndex) => {
+    Reflect.defineMetadata(
+      `context:${String(propertyKey)}:${parameterIndex}`,
+      "context",
       target
     );
   };
