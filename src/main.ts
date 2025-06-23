@@ -8,7 +8,6 @@ import {
   Rep,
   Query,
   Parameter,
-  Context,
 } from "./index.js";
 
 import fastifySwagger from "@fastify/swagger";
@@ -27,11 +26,15 @@ export class TestService3 {
   }
 }
 
-@Service([])
+@Service([], "REQUEST")
 export class TestService2 {
-  constructor() {}
+  private args: any;
+  constructor(...args: any[]) {
+    this.args = args;
+  }
 
   getWorld() {
+    console.log({ ctx: this.args })
     return "World";
   }
 }
@@ -57,8 +60,7 @@ export class FastifyRouter {
     @Req() request: FastifyRequest,
     @Rep() reply: FastifyReply,
     @Query("info") info: string,
-    @Parameter("id") id: string,
-    @Context() context: any
+    @Parameter("id") id: string
   ) {
     return reply.send({
       ok: true,
@@ -70,7 +72,9 @@ export class FastifyRouter {
 }
 
 (async () => {
-  registerControllers(fastify, { controllers: [FastifyRouter] });
+  registerControllers(fastify, {
+    controllers: [FastifyRouter],
+  });
 
   fastify.get(
     "/ping",

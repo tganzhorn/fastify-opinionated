@@ -40,7 +40,7 @@ describe("Integration tests", async () => {
     }
   }
 
-  @Service([])
+  @Service([], "REQUEST")
   class TestService2 {
     constructor() {}
 
@@ -231,13 +231,20 @@ describe("Integration tests", async () => {
     assert.strictEqual(response2.body, "2");
   });
 
-  await it("service should be initialized async", async () => {
+  await it("service should be per request", async () => {
     const response = await promisifiedInject({
       method: "GET",
-      url: "/test/async_init",
+      url: "/test/increment_per_request",
     });
 
-    assert.strictEqual(response.body, "true");
+    assert.strictEqual(response.body, "1");
+
+    const response2 = await promisifiedInject({
+      method: "GET",
+      url: "/test/increment_per_request",
+    });
+
+    assert.strictEqual(response2.body, "1");
   });
 
   for (const method of [

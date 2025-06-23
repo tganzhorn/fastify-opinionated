@@ -119,13 +119,3 @@ export function Headers(): ParameterDecorator {
     );
   };
 }
-
-export function Context(): ParameterDecorator {
-  return (target, propertyKey, parameterIndex) => {
-    Reflect.defineMetadata(
-      `context:${String(propertyKey)}:${parameterIndex}`,
-      "context",
-      target
-    );
-  };
-}
