@@ -40,7 +40,7 @@ describe("Integration tests", async () => {
     }
   }
 
-  @Service([], "REQUEST")
+  @Service([])
   class TestService2 {
     constructor() {}
 

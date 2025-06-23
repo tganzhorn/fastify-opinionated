@@ -1,17 +1,20 @@
 import Fastify, { FastifyReply, FastifyRequest } from "fastify";
+import "reflect-metadata";
 import { registerControllers } from "./helpers.js";
 import {
+  ContextService,
   Controller,
   Get,
-  Service,
-  Req,
-  Rep,
-  Query,
   Parameter,
+  Query,
+  Rep,
+  Req,
+  Service,
 } from "./index.js";
 
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
+import { PerRequest } from "./service/service.js";
 
 const fastify = Fastify({
   logger: true,
@@ -26,15 +29,11 @@ export class TestService3 {
   }
 }
 
-@Service([], "REQUEST")
+@Service([ContextService])
 export class TestService2 {
-  private args: any;
-  constructor(...args: any[]) {
-    this.args = args;
-  }
+  constructor(private contextService: ContextService) {}
 
   getWorld() {
-    console.log({ ctx: this.args })
     return "World";
   }
 }
@@ -43,10 +42,15 @@ export class TestService2 {
 export class TestService {
   constructor(
     private testService2: TestService2,
-    private testService3: TestService3
-  ) {}
+    private testService3: TestService3,
+  ) {
+  }
+
+  @PerRequest(0)
+  counter: number;
 
   getGreeting() {
+    console.log(this.counter++);
     return this.testService2.getWorld() + " " + this.testService3.getHello();
   }
 }

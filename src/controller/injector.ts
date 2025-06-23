@@ -1,10 +1,10 @@
 import { RouteCtx } from "./controller.js";
-import { Ctx } from "./ctx.js";
+import { Ctx } from "../ctx.js";
 
-export function createInjectorFn(routerCtx: RouteCtx) {
+export function createInjectorFn(routeCtx: RouteCtx) {
   const selectors: string[] = [];
 
-  for (const param of routerCtx.params) {
+  for (const param of routeCtx.params) {
     switch (param.type) {
       case "req":
         selectors.push("ctx.request");
@@ -34,7 +34,7 @@ export function createInjectorFn(routerCtx: RouteCtx) {
         throw new Error(`No selector for "${JSON.stringify(param)}" found!`);
     }
   }
-  
+
   const code = `
   return function(fn, ctx) {
     return fn(${selectors.join(",")});

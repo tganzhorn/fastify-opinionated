@@ -1,23 +1,14 @@
-import { Ctx } from "./controller/ctx";
+import { Ctx } from "./ctx";
 import { DEPS_CTX_SYMBOL } from "./depsCtx";
-import { Scope, SCOPE_SYMBOL } from "./scopeCtx";
 
 export function buildControllers<
   ControllerType extends new (...args: any[]) => any
->(
-  controllers: ControllerType[]
-): [InstanceType<ControllerType>, ControllerType, boolean][] {
-  const controllerInstances: [
-    InstanceType<ControllerType>,
-    ControllerType,
-    boolean
-  ][] = [];
+>(controllers: ControllerType[]): InstanceType<ControllerType>[] {
+  const controllerInstances: InstanceType<ControllerType>[] = [];
 
   for (const Controller of controllers) {
-    const [controllerInstance, isRequestScoped] =
-      instantiateWithDeps(Controller);
-    console.log(isRequestScoped);
-    controllerInstances.push([controllerInstance, Controller, isRequestScoped]);
+    const controllerInstance = instantiateWithDeps(Controller);
+    controllerInstances.push(controllerInstance);
   }
 
   return controllerInstances;
@@ -25,29 +16,13 @@ export function buildControllers<
 
 export function instantiateWithDeps<T>(
   target: new (...args: any[]) => T,
-  ctx?: Ctx,
-  isRequestScoped = false
-): [T, boolean] {
-  const scope =
-    (Reflect.getMetadata(SCOPE_SYMBOL, target) as Scope) ?? "SINGLETON";
-
-  isRequestScoped ||= scope === "REQUEST";
-
+  ctx?: Ctx
+): T {
   const { deps } = Reflect.getMetadata(DEPS_CTX_SYMBOL, target) || [];
-  const dependencies = deps.map((dep: any) => {
-    const [instance, isRequestScopedCalled] = instantiateWithDeps(
-      dep,
-      ctx,
-      isRequestScoped
-    );
-
-    isRequestScoped ||= isRequestScopedCalled;
-
-    return instance;
-  });
-  const instance = new target(...dependencies, ctx);
+  const dependencies = deps.map((dep: any) => instantiateWithDeps(dep, ctx));
+  const instance = new target(...dependencies);
   if ("onServiceInit" in (instance as object))
     (instance as any).onServiceInit();
 
-  return [instance, isRequestScoped];
+  return instance;
 }

@@ -2,7 +2,6 @@ import { FastifySchema, RouteShorthandOptions } from "fastify";
 import { DEPS_CTX_SYMBOL, DepsCtx } from "../depsCtx.js";
 import type { Constructable } from "../helpers.js";
 import type { Param } from "./params.js";
-import { Scope, SCOPE_SYMBOL } from "../scopeCtx.js";
 
 export const CONTROLLER_PATH = "controller:path";
 export const CONTROLLER_CONFIG = "controller:config";
@@ -35,8 +34,7 @@ export type RouteCtx = {
  */
 export function Controller(
   rootPath: Path,
-  deps: Constructable[],
-  scope: Scope = "SINGLETON"
+  deps: Constructable[]
 ): ClassDecorator {
   return (target) => {
     const depsCtx: DepsCtx = {
@@ -81,7 +79,6 @@ export function Controller(
     }
 
     Reflect.defineMetadata(CONTROLLER_CONFIG, controllerCtx, target.prototype);
-    Reflect.defineMetadata(SCOPE_SYMBOL, scope, target);
   };
 }
 

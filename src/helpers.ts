@@ -1,8 +1,9 @@
 import { FastifyInstance, FastifySchema } from "fastify";
+import { asyncLocalStorage } from "./asyncLocalStorage.js";
 import { ControllerCtx } from "./controller/controller.js";
-import { createCtx, Ctx } from "./controller/ctx.js";
 import { createInjectorFn } from "./controller/injector.js";
-import { buildControllers, instantiateWithDeps } from "./di.js";
+import { createCtx } from "./ctx.js";
+import { buildControllers } from "./di.js";
 
 export type Constructable = new (...args: any[]) => any;
 
@@ -18,7 +19,7 @@ export function registerControllers<
 ) {
   const builtControllers = buildControllers(controllers);
 
-  for (const [controller, Controller, isRequestScoped] of builtControllers) {
+  for (const controller of builtControllers) {
     fastify.register((fastify, {}) => {
       const { routerCtxs, rootPath } = Reflect.getMetadata(
         "controller:config",
@@ -27,12 +28,6 @@ export function registerControllers<
 
       for (const [, routerCtx] of routerCtxs.entries()) {
         const injectorFn = createInjectorFn(routerCtx);
-
-        function getController(ctx: Ctx) {
-          if (!isRequestScoped) return controller;
-
-          return instantiateWithDeps(Controller, ctx, true)[0];
-        }
 
         const payload = [
           rootPath + (routerCtx.path === "/" ? "" : routerCtx.path),
@@ -53,11 +48,11 @@ export function registerControllers<
           async (request: any, reply: any) => {
             const ctx = createCtx(request, reply, routerCtx);
 
-            const controller = getController(ctx);
-
-            return injectorFn(
-              controller[routerCtx.propertyKey].bind(controller),
-              ctx
+            return asyncLocalStorage.run(ctx, () =>
+              injectorFn(
+                controller[routerCtx.propertyKey].bind(controller),
+                ctx
+              )
             );
           },
         ] as const;
