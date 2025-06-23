@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      node-plop:
+        specifier: ^0.32.0
+        version: 0.32.0
     devDependencies:
       '@fastify/swagger':
         specifier: ^9.5.1
@@ -38,9 +42,6 @@ importers:
       fastify:
         specifier: ^5.4.0
         version: 5.4.0
-      node-plop:
-        specifier: ^0.32.0
-        version: 0.32.0
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
