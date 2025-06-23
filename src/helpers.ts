@@ -62,7 +62,7 @@ export function registerControllers<
         const injectorFn = createInjectorFn(routerCtx);
 
         const payload = [
-          rootPath + routerCtx.path,
+          rootPath + (routerCtx.path === "/" ? "" : routerCtx.path),
           routerCtx.opts
             ? {
                 ...routerCtx.opts,
