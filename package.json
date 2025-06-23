@@ -1,6 +1,6 @@
 {
   "name": "@tganzhorn/fastify-modular",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "repository": {
     "type": "git",
     "url": "https://github.com/tganzhorn/fastify-opinionated.git"
@@ -37,13 +37,11 @@
     "@types/node": "^24.0.3",
     "esbuild-decorators": "^1.0.0",
     "fastify": "^5.4.0",
+    "node-plop": "^0.32.0",
     "reflect-metadata": "^0.2.2",
     "rollup-plugin-dts": "^6.2.1",
     "tsup": "^8.5.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "node-plop": "^0.32.0"
   }
 }

@@ -58,7 +58,7 @@ export function registerControllers<
       request: FastifyRequest,
       reply: FastifyReply,
       routeCtx: RouteCtx
-    ) => CustomContext;
+    ) => Promise<CustomContext> | CustomContext;
   }
 ) {
   const builtControllers = buildControllers(controllers);
@@ -96,7 +96,7 @@ export function registerControllers<
                 } as FastifySchema,
               },
           async (request: any, reply: any) => {
-            const ctx = createCtxFn(request, reply, routerCtx);
+            const ctx = await createCtxFn(request, reply, routerCtx);
 
             return injectorFn(
               controller[routerCtx.propertyKey].bind(controller),
