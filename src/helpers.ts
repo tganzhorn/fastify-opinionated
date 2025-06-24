@@ -48,12 +48,9 @@ export function registerControllers<
           async (request: any, reply: any) => {
             const ctx = createCtx(request, reply, routerCtx);
 
-            return asyncLocalStorage.run(ctx, () =>
-              injectorFn(
-                controller[routerCtx.propertyKey].bind(controller),
-                ctx
-              )
-            );
+            asyncLocalStorage.enterWith(ctx);
+
+            return await injectorFn(controller[routerCtx.propertyKey].bind(controller), ctx);
           },
         ] as const;
 

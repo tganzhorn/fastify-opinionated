@@ -15,6 +15,7 @@ export {
   Raw,
   Rep,
   Req,
+  Sse,
   Schema,
 } from "./controller/index.js";
 export { Service, type OnServiceInit } from "./service/service.js";

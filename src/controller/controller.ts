@@ -189,3 +189,21 @@ export function Patch(path: Path, opts?: RouteShorthandOptions) {
 export function All(path: Path, opts?: RouteShorthandOptions) {
   return genericMethod(path, "ALL", opts);
 }
+
+export function Sse(path: Path, opts: RouteShorthandOptions = {}) {
+  return genericMethod(path, "GET", {
+    preHandler: (_, reply, next) => {
+      reply.raw.writeHead(200, {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache",
+        connection: "keep-alive",
+      });
+      next();
+    },
+    errorHandler(error, _, reply) {
+      reply.raw.write(`error: ${JSON.stringify(error)}`);
+      reply.raw.end();
+    },
+    ...opts,
+  });
+}
