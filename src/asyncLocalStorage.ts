@@ -8,9 +8,15 @@ export function getAsyncLocalStorage<C extends Ctx>() {
 }
 
 export function writeToAsyncLocalStorage<Data>(key: Symbol, data: Data) {
-  getAsyncLocalStorage()[key] = data;
+  const storage = getAsyncLocalStorage();
+
+  if (!storage) return;
+
+  storage[key] = data;
+
+  return storage[key];
 }
 
 export function getFromAsyncLocalStorage<Data>(key: Symbol) {
-  return getAsyncLocalStorage()[key] as Data;
+  return getAsyncLocalStorage()[key] as Data | undefined;
 }

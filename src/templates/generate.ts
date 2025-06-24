@@ -14,7 +14,7 @@ const ControllerTemplate = /** hbs */ `
 import { Controller } from '@tganzhorn/fastify-modular';
 
 @Controller('/{{lname}}', [])
-class {{name}}Controller {
+export class {{name}}Controller {
     constructor() {}
 }
 `;
@@ -23,7 +23,7 @@ const ServiceTemplate = /** hbs */ `
 import { Service } from '@tganzhorn/fastify-modular';
 
 @Service([])
-class {{name}}Service {
+export class {{name}}Service {
     constructor() {}
 }
 `;

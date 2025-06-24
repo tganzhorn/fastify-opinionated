@@ -20,3 +20,4 @@ export {
 export { Service, type OnServiceInit } from "./service/service.js";
 export { registerControllers } from "./helpers.js";
 export { ContextService, type Ctx } from "./ctx.js";
+export { RequestStore } from "./requestStore.js";

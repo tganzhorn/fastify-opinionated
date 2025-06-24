@@ -17,6 +17,7 @@ import {
   Schema,
   Service,
   All,
+  RequestStore,
   registerControllers,
 } from "../dist/index.js";
 // } from "../src/index"
@@ -41,13 +42,13 @@ describe("Integration tests", async () => {
   }
 
   @Service([])
-  class TestService2 {
-    constructor() {}
-
-    private counter = 0;
+  class TestService2 extends RequestStore {
+    constructor() {
+      super({ counter: 0 });
+    }
 
     increment() {
-      return ++this.counter;
+      return ++this.requestStore.counter;
     }
 
     initialized = false;

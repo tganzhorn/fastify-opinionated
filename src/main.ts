@@ -10,11 +10,11 @@ import {
   Rep,
   Req,
   Service,
+  RequestStore,
 } from "./index.js";
 
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
-import { PerRequest } from "./service/service.js";
 
 const fastify = Fastify({
   logger: true,
@@ -39,18 +39,17 @@ export class TestService2 {
 }
 
 @Service([TestService2, TestService3])
-export class TestService {
+export class TestService extends RequestStore<{ counter: number }> {
   constructor(
     private testService2: TestService2,
-    private testService3: TestService3,
+    private testService3: TestService3
   ) {
+    super({ counter: 0 });
   }
 
-  @PerRequest(0)
-  counter: number;
-
   getGreeting() {
-    console.log(this.counter++);
+    console.log(this.requestStore.counter++);
+    console.log(this.requestStore.counter++);
     return this.testService2.getWorld() + " " + this.testService3.getHello();
   }
 }
