@@ -1,6 +1,6 @@
 {
   "name": "@tganzhorn/fastify-modular",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/tganzhorn/fastify-opinionated.git"
@@ -29,6 +29,7 @@
   "devDependencies": {
     "@swc/cli": "^0.7.7",
     "@swc/core": "^1.12.1",
+    "@swc/helpers": "^0.5.17",
     "@types/node": "^24.0.3",
     "fastify": "^5.4.0",
     "tsup": "^8.5.0",
@@ -36,13 +37,10 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@keyv/redis": "^4.5.0",
-    "@swc/helpers": "^0.5.17",
     "bullmq": "^5.56.1",
     "cache-manager": "^7.0.1",
     "commander": "^14.0.0",
     "handlebars": "^4.7.8",
-    "keyv": "^5.3.4",
     "reflect-metadata": "^0.2.2"
   }
 }

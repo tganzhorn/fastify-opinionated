@@ -16,8 +16,6 @@ import { JobScheduler, Worker, Cache } from "./controller/controller.js";
 import { InjectQueue, Job } from "./controller/params.js";
 import { Queue } from "bullmq";
 import { createCache } from "cache-manager";
-import { Keyv } from "keyv";
-import KeyvRedis from "@keyv/redis";
 
 const fastify = Fastify({
   logger: true,
@@ -108,9 +106,6 @@ export class FastifyRouter {
       host: "localhost",
       port: 6379,
     },
-    cache: createCache({
-      stores: [new Keyv({ store: new KeyvRedis("redis://localhost:6379") })],
-    }),
   });
 
   await fastify.listen({
