@@ -30,6 +30,12 @@ export function createInjectorFn(routeCtx: RouteCtx) {
       case "context":
         selectors.push("ctx");
         break;
+      case "queue":
+        selectors.push(`ctx.queues.get("${param.name}")`);
+        break;
+      case "job":
+        selectors.push(`ctx.job`);
+        break;
       default:
         throw new Error(`No selector for "${JSON.stringify(param)}" found!`);
     }

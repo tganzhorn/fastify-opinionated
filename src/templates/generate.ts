@@ -1,109 +1,98 @@
-import { readFile } from "fs/promises";
-import nodePlop from "node-plop";
-import { join, sep } from "path";
+import Handlebars from "handlebars";
+import { Argument, Command } from "commander";
+import { mkdir, readFile, writeFile } from "fs/promises";
+import { join, resolve, sep } from "path";
+import { cwd } from "process";
+
+const ControllerTemplate = Handlebars.compile(/** hbs */ `
+import { Controller } from '@tganzhorn/fastify-modular';
+
+@Controller('/{{lname}}', [])
+export class {{cname}}Controller {
+    constructor() {}
+}
+`);
+
+const ServiceTemplate = Handlebars.compile(/** hbs */ `
+import { Service } from '@tganzhorn/fastify-modular';
+
+@Service([])
+export class {{cname}}Service {
+    constructor() {}
+}
+`);
 
 function capitalize(word: string) {
-  return word.charAt(0).toLowerCase() + word.slice(1);
+  return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
 function uncapitalize(word: string) {
   return word.charAt(0).toLowerCase() + word.slice(1);
 }
 
-const ControllerTemplate = /** hbs */ `
-import { Controller } from '@tganzhorn/fastify-modular';
+const program = new Command();
 
-@Controller('/{{lname}}', [])
-export class {{name}}Controller {
-    constructor() {}
-}
-`;
+program
+  .name("fastify-modular")
+  .description("CLI to create services and controllers easily.")
+  .version("0.1.0");
 
-const ServiceTemplate = /** hbs */ `
-import { Service } from '@tganzhorn/fastify-modular';
+program
+  .command("create")
+  .description("create a component")
+  .addArgument(
+    new Argument("<component>", "component to create").choices([
+      "service",
+      "controller",
+    ])
+  )
+  .addArgument(new Argument("<name>", "component name"))
+  .action(async (component, name) => {
+    let config: { root?: string; createSubFolders?: boolean } = {
+      root: "/src",
+      createSubFolders: true,
+    };
 
-@Service([])
-export class {{name}}Service {
-    constructor() {}
-}
-`;
+    try {
+      const conf = JSON.parse(
+        (await readFile(".fastify-modular.rc.json")).toString()
+      );
 
-(async () => {
-  const plop = await nodePlop();
+      config = conf;
+    } catch (e) {}
 
-  let config: { root?: string; createSubFolders?: boolean } = {
-    root: "/src",
-    createSubFolders: true,
-  };
+    const cname = capitalize(name);
+    const lname = uncapitalize(name);
 
-  try {
-    const conf = JSON.parse(
-      (await readFile(".fastify-modular.rc.json")).toString()
+    const path =
+      config.createSubFolders ?? true
+        ? [config.root ?? "/src", lname]
+        : [config.root ?? "/src"];
+
+    let template = "";
+
+    switch (component) {
+      case "controller":
+        template = ControllerTemplate({ cname, lname });
+        break;
+      case "service":
+        template = ServiceTemplate({ cname, lname });
+        break;
+    }
+
+    await mkdir(resolve(join(cwd(), ...path)), {
+      recursive: true,
+    });
+
+    console.log(resolve(join(cwd(), ...path)));
+
+    await writeFile(
+      join(resolve(join(cwd(), ...path, `${lname}.${component}.ts`)))
+        .split(sep)
+        .filter((s) => s.length !== 0)
+        .join(sep),
+      template
     );
-
-    config = conf;
-  } catch (e) {}
-
-  const generator = plop.setGenerator("component", {
-    description: "Generate component.",
-    prompts: [
-      {
-        name: "type",
-        type: "list",
-        choices: ["controller", "service"],
-        message: "Select component type:",
-      },
-      {
-        name: "name",
-        type: "input",
-        message: "Please enter a name:",
-      },
-    ],
-    actions: function (answers) {
-      if (!answers) throw new Error("Something went wrong!");
-
-      const path =
-        config.createSubFolders ?? true
-          ? [config.root ?? "/src", "{{lname}}"]
-          : [config.root ?? "/src"];
-
-      if (answers.type === "controller") {
-        return [
-          {
-            type: "add",
-            path: join(...path, "{{lname}}.controller.ts")
-              .split(sep)
-              .filter((s) => s.length !== 0)
-              .join("/"),
-            data: {
-              name: capitalize(answers.name),
-              lname: uncapitalize(answers.name),
-            },
-            template: ControllerTemplate,
-          },
-        ];
-      }
-
-      return [
-        {
-          type: "add",
-          path: join(...path, "{{lname}}.service.ts")
-            .split(sep)
-            .filter((s) => s.length !== 0)
-            .join("/"),
-          data: {
-            name: capitalize(answers.name),
-            lname: uncapitalize(answers.name),
-          },
-          template: ServiceTemplate,
-        },
-      ];
-    },
   });
 
-  const answers = await generator.runPrompts();
-
-  await generator.runActions(answers);
-})()
-  .catch(() => process.exit(1))
-  .finally(() => process.exit(0));
+program.parse();

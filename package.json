@@ -1,6 +1,6 @@
 {
   "name": "@tganzhorn/fastify-modular",
-  "version": "0.0.16",
+  "version": "0.1.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/tganzhorn/fastify-opinionated.git"
@@ -27,21 +27,19 @@
   "author": "Tobias Ganzhorn",
   "license": "MIT",
   "devDependencies": {
-    "@fastify/swagger": "^9.5.1",
-    "@fastify/swagger-ui": "^5.2.3",
-    "@rollup/plugin-swc": "^0.4.0",
-    "@sinclair/typebox": "^0.34.35",
     "@swc/cli": "^0.7.7",
     "@swc/core": "^1.12.1",
-    "@swc/helpers": "^0.5.17",
     "@types/node": "^24.0.3",
-    "esbuild-decorators": "^1.0.0",
     "fastify": "^5.4.0",
-    "node-plop": "^0.32.0",
-    "reflect-metadata": "^0.2.2",
-    "rollup-plugin-dts": "^6.2.1",
     "tsup": "^8.5.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@swc/helpers": "^0.5.17",
+    "bullmq": "^5.56.1",
+    "commander": "^14.0.0",
+    "handlebars": "^4.7.8",
+    "reflect-metadata": "^0.2.2"
   }
 }

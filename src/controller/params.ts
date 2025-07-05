@@ -6,7 +6,9 @@ export type Param =
   | ParamParam
   | HeadersParam
   | RawParam
-  | ContextParam;
+  | ContextParam
+  | QueueParam
+  | JobParam;
 
 type RequestParam = {
   type: "req";
@@ -47,6 +49,17 @@ type RawParam = {
 
 type ContextParam = {
   type: "context";
+  methodName: string;
+};
+
+type QueueParam = {
+  type: "queue";
+  methodName: string;
+  name: string;
+};
+
+type JobParam = {
+  type: "job";
   methodName: string;
 };
 
@@ -94,7 +107,7 @@ export function Rep(): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
       `rep:${String(propertyKey)}:${parameterIndex}`,
-      "rep",
+      null,
       target
     );
   };
@@ -104,7 +117,7 @@ export function Raw(): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
       `raw:${String(propertyKey)}:${parameterIndex}`,
-      "raw",
+      null,
       target
     );
   };
@@ -114,7 +127,27 @@ export function Headers(): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
       `headers:${String(propertyKey)}:${parameterIndex}`,
-      "headers",
+      null,
+      target
+    );
+  };
+}
+
+export function InjectQueue(name: string): ParameterDecorator {
+  return (target, propertyKey, parameterIndex) => {
+    Reflect.defineMetadata(
+      `queue:${String(propertyKey)}:${parameterIndex}`,
+      name,
+      target
+    );
+  };
+}
+
+export function Job(): ParameterDecorator {
+  return (target, propertyKey, parameterIndex) => {
+    Reflect.defineMetadata(
+      `job:${String(propertyKey)}:${parameterIndex}`,
+      null,
       target
     );
   };

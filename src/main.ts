@@ -11,10 +11,20 @@ import {
   Req,
   Service,
   RequestStore,
+  Ctx,
 } from "./index.js";
+import crypto from "crypto";
+import { JobScheduler, Worker } from "./controller/controller.js";
+import { InjectQueue, Job } from "./controller/params.js";
+import { Queue } from "bullmq";
 
-import fastifySwagger from "@fastify/swagger";
-import fastifySwaggerUi from "@fastify/swagger-ui";
+const a = new Uint8Array(32);
+
+const secret = crypto.createHash("sha1").update(a).digest("hex");
+
+console.log(
+  `otpauth://totp/MUBEA:tganzhorn@gmail.com?secret=${secret.toUpperCase()}&issuer=MUBEA&algorithm=SHA1&digits=6&period=30`
+);
 
 const fastify = Fastify({
   logger: true,
@@ -48,23 +58,27 @@ export class TestService extends RequestStore<{ counter: number }> {
   }
 
   getGreeting() {
-    console.log(this.requestStore.counter++);
-    console.log(this.requestStore.counter++);
     return this.testService2.getWorld() + " " + this.testService3.getHello();
   }
 }
 
-@Controller("/events", [TestService])
+@Controller("/events", [TestService, ContextService])
 export class FastifyRouter {
-  constructor(private testService: TestService) {}
+  constructor(
+    private testService: TestService,
+    private contextService: ContextService
+  ) {}
 
   @Get("/:id")
   async test(
     @Req() request: FastifyRequest,
     @Rep() reply: FastifyReply,
     @Query("info") info: string,
-    @Parameter("id") id: string
+    @Parameter("id") id: string,
+    @InjectQueue("test") queue: Queue
   ) {
+    queue.add("was geht", { abc: true });
+
     return reply.send({
       ok: true,
       info,
@@ -72,65 +86,23 @@ export class FastifyRouter {
       hello: this.testService.getGreeting(),
     });
   }
+
+  @JobScheduler("scheduler", { every: 5000 })
+  @Worker("test")
+  async allesKlar(@InjectQueue("test") queue: Queue, @Job() job: any) {
+    console.log("YESSA", job.data);
+  }
 }
 
 (async () => {
   registerControllers(fastify, {
     controllers: [FastifyRouter],
-  });
-
-  fastify.get(
-    "/ping",
-    {
-      schema: {
-        response: {
-          204: {},
-        },
-      },
-    },
-    async (request, reply) => {}
-  );
-
-  fastify.register(fastifySwagger, {
-    openapi: {
-      openapi: "3.0.0",
-      info: {
-        title: "FHH VR - Backend API",
-        description: "This is the backend api for the FHHVR Project.",
-        // version: json.version,
-        version: "0",
-      },
-      servers: [
-        {
-          url: "http://localhost:5000",
-          description: "Development server",
-        },
-      ],
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: "http",
-            scheme: "bearer",
-            bearerFormat: "JWT",
-          },
-        },
-      },
-      security: [],
+    bullMqConnection: {
+      host: "localhost",
+      port: 6379,
     },
   });
 
-  fastify.register(fastifySwaggerUi, {
-    routePrefix: "/docs",
-    uiConfig: {
-      docExpansion: "list",
-      deepLinking: false,
-    },
-    staticCSP: true,
-    transformSpecificationClone: true,
-  });
-
-  await fastify.ready();
-  fastify.swagger();
   await fastify.listen({
     port: 5000,
   });

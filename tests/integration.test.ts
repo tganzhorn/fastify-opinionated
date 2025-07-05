@@ -19,10 +19,15 @@ import {
   All,
   RequestStore,
   registerControllers,
+  ContextService,
+  Ctx,
+  JobScheduler,
+  OnServiceInit,
+  Sse,
+  Worker,
 } from "../dist/index.js";
 // } from "../src/index"
 import assert from "node:assert";
-import { Type } from "@sinclair/typebox";
 
 describe("Integration tests", async () => {
   const fastify = Fastify();
@@ -35,6 +40,11 @@ describe("Integration tests", async () => {
       return "Hello, world!";
     }
 
+    workerCounter = 0;
+    testWorker() {
+      this.workerCounter++;
+    }
+
     private counter = 0;
     increment() {
       return ++this.counter;
@@ -42,7 +52,7 @@ describe("Integration tests", async () => {
   }
 
   @Service([])
-  class TestService2 extends RequestStore {
+  class TestService2 extends RequestStore<{ counter: number }> {
     constructor() {
       super({ counter: 0 });
     }
@@ -130,7 +140,17 @@ describe("Integration tests", async () => {
     }
 
     @Post("/schema")
-    @Schema({ body: Type.Object({ test: Type.String() }) })
+    @Schema({
+      body: {
+        type: "object",
+        properties: {
+          test: {
+            type: "string",
+          },
+        },
+        required: ["test"],
+      },
+    })
     async schema(@Body() body: { test: "abc" }) {
       return body;
     }
@@ -144,13 +164,35 @@ describe("Integration tests", async () => {
     async asyncInit() {
       return this.testService2.initialized;
     }
+
+    @JobScheduler("test-scheduler", {
+      every: 1000,
+    })
+    @Worker("test")
+    async worker() {
+      this.testService.testWorker();
+    }
+
+    @Get("/get-worker")
+    async getWorker() {
+      return this.testService.workerCounter;
+    }
   }
 
-  await registerControllers(fastify, { controllers: [TestController] });
+  await it("should register controllers", async () => {
+    await registerControllers(fastify, {
+      controllers: [TestController],
+      bullMqConnection: {
+        host: "localhost",
+        port: 6379,
+      },
+    });
+  });
 
   const promisifiedInject = async (opts: InjectOptions) => {
     return new Promise<LightMyRequestResponse>((resolve, reject) => {
       fastify.inject(opts, (error, response) => {
+        if (!response) return reject("No message");
         resolve(response);
         reject(error);
       });
@@ -246,6 +288,20 @@ describe("Integration tests", async () => {
     });
 
     assert.strictEqual(response2.body, "1");
+  });
+
+  await it("worker should do stuff", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // wait atleast a second
+
+    const response = await promisifiedInject({
+      method: "GET",
+      url: "/test/get-worker",
+    });
+
+    assert.ok(
+      parseFloat(response.body) > 0,
+      `Response was ${response.body} > 0`
+    );
   });
 
   for (const method of [

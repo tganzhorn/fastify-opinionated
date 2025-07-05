@@ -1,9 +1,7 @@
 import type { Options } from "tsup";
 
-import { esbuildDecorators } from "esbuild-decorators";
-
 export const tsup: Options = {
-  splitting: false,
+  splitting: true,
   sourcemap: true,
   platform: "node",
   minify: true,
@@ -12,7 +10,7 @@ export const tsup: Options = {
   format: ["esm"],
   bundle: true,
   clean: true,
-  treeshake: false,
-  esbuildPlugins: [esbuildDecorators()],
-  entryPoints: ["src/index.ts", "src/templates/generate.ts"],
+  treeshake: true,
+  entry: ["src/index.ts", "src/templates/generate.ts"],
+  noExternal: [],
 };

@@ -17,6 +17,10 @@ export {
   Req,
   Sse,
   Schema,
+  JobScheduler,
+  Job,
+  InjectQueue,
+  Worker,
 } from "./controller/index.js";
 export { Service, type OnServiceInit } from "./service/service.js";
 export { registerControllers } from "./helpers.js";

@@ -1,5 +1,6 @@
+import type { Queue, WorkerOptions } from "bullmq";
 import { FastifySchema, RouteShorthandOptions } from "fastify";
-import { DEPS_CTX_SYMBOL, DepsCtx } from "../depsCtx.js";
+import { DEPS_CTX_SYMBOL, type DepsCtx } from "../depsCtx.js";
 import type { Constructable } from "../helpers.js";
 import type { Param } from "./params.js";
 
@@ -7,7 +8,7 @@ export const CONTROLLER_PATH = "controller:path";
 export const CONTROLLER_CONFIG = "controller:config";
 export const ROUTE = "route";
 
-type HTTPRequestMethods = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ALL";
+type Methods = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ALL";
 
 type Path = `/${string}`;
 
@@ -16,16 +17,23 @@ export type ControllerCtx = {
   routerCtxs: Map<string, RouteCtx>;
 };
 
-export type RouteCtx = {
-  path: string;
-  method: HTTPRequestMethods;
-  propertyKey: string;
-  opts?: RouteShorthandOptions;
-  schema?: FastifySchema;
-  call: (...args: any[]) => any;
-  params: Param[];
-};
-
+export type RouteCtx =
+  | {
+      path: string;
+      method: Methods;
+      propertyKey: string;
+      opts?: RouteShorthandOptions;
+      schema?: FastifySchema;
+      params: Param[];
+    }
+  | {
+      method: "WORKER";
+      name: string;
+      workerOpts?: WorkerOptions;
+      jobSchedulers: Parameters<Queue["upsertJobScheduler"]>[];
+      propertyKey: string;
+      params: Param[];
+    };
 /**
  *
  * @param rootPath Root path e.g. /events but can be anything that starts with /.
@@ -70,10 +78,13 @@ export function Controller(
             continue;
           }
 
-          controllerCtx.routerCtxs.get(newKey)!.schema = Reflect.getMetadata(
-            key,
-            target.prototype
-          );
+          const foundRouterCtx = controllerCtx.routerCtxs.get(newKey);
+
+          if (!foundRouterCtx) throw new Error("No router ctx found!");
+
+          if (foundRouterCtx.method === "WORKER") continue;
+
+          foundRouterCtx.schema = Reflect.getMetadata(key, target.prototype);
         }
       }
     }
@@ -84,7 +95,7 @@ export function Controller(
 
 function genericMethod(
   path: Path,
-  method: HTTPRequestMethods,
+  method: Methods,
   opts?: RouteShorthandOptions
 ) {
   return (
@@ -92,14 +103,16 @@ function genericMethod(
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<(...params: any[]) => any>
   ) => {
-    const originalMethod = descriptor.value;
-
     const params: Param[] = [];
 
     for (const key of Reflect.getMetadataKeys(target)) {
       const [type, methodName, parameterIndex] = key.split(":");
 
-      switch (type) {
+      if (type === "route") continue;
+
+      if (methodName !== propertyKey) continue;
+
+      switch (type as Param["type"]) {
         case "req":
           params[parameterIndex] = { type: "req", methodName };
           break;
@@ -144,6 +157,18 @@ function genericMethod(
             methodName,
           };
           break;
+        case "queue":
+          params[parameterIndex] = {
+            type: "queue",
+            methodName,
+            name: Reflect.getMetadata(key, target),
+          };
+          break;
+        default:
+          console.error(Reflect.getMetadataKeys(target));
+          throw new Error(
+            `Controller does not support ${type} parameter in method ${methodName}!`
+          );
       }
     }
 
@@ -151,9 +176,6 @@ function genericMethod(
       path,
       method,
       propertyKey,
-      call(...args) {
-        return originalMethod?.apply(this, args);
-      },
       opts,
       params,
     };
@@ -206,4 +228,88 @@ export function Sse(path: Path, opts: RouteShorthandOptions = {}) {
     },
     ...opts,
   });
+}
+
+export function Worker(name: string, workerOpts?: WorkerOptions) {
+  return (
+    target: object,
+    propertyKey: string,
+    descriptor: TypedPropertyDescriptor<(...args: any[]) => any>
+  ) => {
+    const params: Param[] = [];
+
+    for (const key of Reflect.getMetadataKeys(target)) {
+      const [type, methodName, parameterIndex] = key.split(":");
+
+      if (type === "router") continue;
+
+      if (methodName !== propertyKey) continue;
+
+      switch (type as Param["type"]) {
+        case "context":
+          params[parameterIndex] = {
+            type: "context",
+            methodName,
+          };
+          break;
+        case "queue":
+          params[parameterIndex] = {
+            type: "queue",
+            methodName,
+            name: Reflect.getMetadata(key, target),
+          };
+          break;
+        case "job":
+          params[parameterIndex] = {
+            type: "job",
+            methodName,
+          };
+          break;
+        default:
+          console.error(Reflect.getMetadataKeys(target));
+          throw new Error(
+            `Worker does not support ${type} parameter in method ${methodName}!`
+          );
+      }
+    }
+
+    const routeCtx: RouteCtx = {
+      method: "WORKER",
+      propertyKey,
+      name,
+      jobSchedulers: [],
+      workerOpts,
+      params,
+    };
+
+    Reflect.defineMetadata(
+      `${CONTROLLER_PATH}:${propertyKey}`,
+      routeCtx,
+      target
+    );
+  };
+}
+
+export function JobScheduler(
+  ...params: Parameters<Queue["upsertJobScheduler"]>
+) {
+  return (
+    target: object,
+    propertyKey: string,
+    descriptor: TypedPropertyDescriptor<(...args: any[]) => any>
+  ) => {
+    const ctx = Reflect.getMetadata(
+      `${CONTROLLER_PATH}:${propertyKey}`,
+      target
+    );
+
+    if (!ctx?.jobSchedulers)
+      throw new Error(
+        "JobScheduler can only be used above a Worker decorator!"
+      );
+
+    ctx.jobSchedulers.push(params);
+
+    Reflect.defineMetadata(`${CONTROLLER_PATH}:${propertyKey}`, ctx, target);
+  };
 }

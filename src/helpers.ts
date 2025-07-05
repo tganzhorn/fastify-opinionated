@@ -1,3 +1,4 @@
+import { ConnectionOptions, Queue, Worker } from "bullmq";
 import { FastifyInstance, FastifySchema } from "fastify";
 import { asyncLocalStorage } from "./asyncLocalStorage.js";
 import { ControllerCtx } from "./controller/controller.js";
@@ -13,20 +14,63 @@ export function registerControllers<
   fastify: FastifyInstance,
   {
     controllers,
+    bullMqConnection,
   }: {
     controllers: ControllerType[];
+    bullMqConnection?: ConnectionOptions;
   }
 ) {
+  const queues = new Map<string, any>();
+
   const builtControllers = buildControllers(controllers);
 
   for (const controller of builtControllers) {
-    fastify.register((fastify, {}) => {
+    fastify.register((fastify) => {
       const { routerCtxs, rootPath } = Reflect.getMetadata(
         "controller:config",
         controller
       ) as ControllerCtx;
 
       for (const [, routerCtx] of routerCtxs.entries()) {
+        switch (routerCtx.method) {
+          case "WORKER": {
+            if (!bullMqConnection)
+              throw new Error(
+                "bullMqConnection must be set when using a worker!"
+              );
+
+            let queue = queues.get(routerCtx.name);
+
+            if (!queue) {
+              queue = new Queue(routerCtx.name);
+              queues.set(routerCtx.name, queue);
+            }
+
+            for (const jobScheduler of routerCtx.jobSchedulers) {
+              queue.upsertJobScheduler(...jobScheduler);
+            }
+
+            const injectorFn = createInjectorFn(routerCtx);
+
+            new Worker(
+              routerCtx.name,
+              async (job) => {
+                const ctx = createCtx(null, null, routerCtx, queues, job);
+
+                asyncLocalStorage.enterWith(ctx);
+
+                await injectorFn(
+                  controller[routerCtx.propertyKey].bind(controller),
+                  ctx
+                )();
+              },
+              { connection: bullMqConnection }
+            );
+
+            continue;
+          }
+        }
+
         const injectorFn = createInjectorFn(routerCtx);
 
         const payload = [
@@ -46,11 +90,14 @@ export function registerControllers<
                 } as FastifySchema,
               },
           async (request: any, reply: any) => {
-            const ctx = createCtx(request, reply, routerCtx);
+            const ctx = createCtx(request, reply, routerCtx, queues, null);
 
             asyncLocalStorage.enterWith(ctx);
 
-            return await injectorFn(controller[routerCtx.propertyKey].bind(controller), ctx);
+            return await injectorFn(
+              controller[routerCtx.propertyKey].bind(controller),
+              ctx
+            );
           },
         ] as const;
 
