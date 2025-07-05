@@ -8,7 +8,8 @@ export type Param =
   | RawParam
   | ContextParam
   | QueueParam
-  | JobParam;
+  | JobParam
+  | CacheParam;
 
 type RequestParam = {
   type: "req";
@@ -63,6 +64,19 @@ type JobParam = {
   methodName: string;
 };
 
+type CacheParam = {
+  type: "cache";
+  methodName: string;
+};
+
+/**
+ * @function Body
+ * @description Decorator that injects the parsed HTTP request body into the controller method parameter.
+ * @returns ParameterDecorator
+ * @example
+ * @Post("/example")
+ * example(@Body() body: any) {}
+ */
 export function Body(): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
@@ -73,6 +87,15 @@ export function Body(): ParameterDecorator {
   };
 }
 
+/**
+ * @function Query
+ * @description Decorator that injects a value from the request's query string by name.
+ * @param name - The name of the query parameter to inject.
+ * @returns ParameterDecorator
+ * @example
+ * @Get("/search")
+ * search(@Query("term") term: string) {}
+ */
 export function Query(name: string): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
@@ -83,6 +106,15 @@ export function Query(name: string): ParameterDecorator {
   };
 }
 
+/**
+ * @function Parameter
+ * @description Decorator that injects a path parameter from the request URL (e.g. /user/:id).
+ * @param name - The name of the route parameter to inject.
+ * @returns ParameterDecorator
+ * @example
+ * @Get("/user/:id")
+ * getUser(@Parameter("id") id: string) {}
+ */
 export function Parameter(name: string): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
@@ -93,6 +125,13 @@ export function Parameter(name: string): ParameterDecorator {
   };
 }
 
+/**
+ * @function Req
+ * @description Decorator that injects the raw FastifyRequest object into the controller method.
+ * @returns ParameterDecorator
+ * @example
+ * handler(@Req() req: FastifyRequest) {}
+ */
 export function Req(): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
@@ -103,6 +142,13 @@ export function Req(): ParameterDecorator {
   };
 }
 
+/**
+ * @function Rep
+ * @description Decorator that injects the FastifyReply object into the controller method.
+ * @returns ParameterDecorator
+ * @example
+ * handler(@Rep() reply: FastifyReply) {}
+ */
 export function Rep(): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
@@ -113,6 +159,13 @@ export function Rep(): ParameterDecorator {
   };
 }
 
+/**
+ * @function Raw
+ * @description Decorator that injects the raw NodeJs req/res pair (useful for low-level access).
+ * @returns ParameterDecorator
+ * @example
+ * handler(@Raw() raw: { req: IncomingMessage, res: ServerResponse }) {}
+ */
 export function Raw(): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
@@ -123,6 +176,13 @@ export function Raw(): ParameterDecorator {
   };
 }
 
+/**
+ * @function Headers
+ * @description Decorator that injects the request headers object into the controller method.
+ * @returns ParameterDecorator
+ * @example
+ * handler(@Headers() headers: Record<string, string>) {}
+ */
 export function Headers(): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
@@ -133,6 +193,14 @@ export function Headers(): ParameterDecorator {
   };
 }
 
+/**
+ * @function InjectQueue
+ * @description Decorator that injects a BullMQ queue instance by name into the controller method.
+ * @param name - The name of the BullMQ queue to inject.
+ * @returns ParameterDecorator
+ * @example
+ * handler(@InjectQueue("emailQueue") queue: Queue) {}
+ */
 export function InjectQueue(name: string): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
@@ -143,10 +211,52 @@ export function InjectQueue(name: string): ParameterDecorator {
   };
 }
 
+/**
+ * @function Job
+ * @description Decorator that injects the BullMQ Job instance currently being processed.
+ * @returns ParameterDecorator
+ * @example
+ * @Worker("email")
+ * process(@Job() job: Job) {}
+ */
 export function Job(): ParameterDecorator {
   return (target, propertyKey, parameterIndex) => {
     Reflect.defineMetadata(
       `job:${String(propertyKey)}:${parameterIndex}`,
+      null,
+      target
+    );
+  };
+}
+
+/**
+ * @function InjectCache
+ * @description Decorator that injects the cache instance.
+ * @returns ParameterDecorator
+ * @example
+ * handler(@InjectCache() cache: Cache) {}
+ */
+export function InjectCache(): ParameterDecorator {
+  return (target, propertyKey, parameterIndex) => {
+    Reflect.defineMetadata(
+      `cache:${String(propertyKey)}:${parameterIndex}`,
+      null,
+      target
+    );
+  };
+}
+
+/**
+ * @function InjectContext
+ * @description Decorator that injects a context object for the current request / job (e.g., for DI or shared state).
+ * @returns ParameterDecorator
+ * @example
+ * handler(@InjectContext() ctx: Ctx) {}
+ */
+export function InjectContext(): ParameterDecorator {
+  return (target, propertyKey, parameterIndex) => {
+    Reflect.defineMetadata(
+      `context:${String(propertyKey)}:${parameterIndex}`,
       null,
       target
     );

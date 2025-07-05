@@ -2,7 +2,6 @@ import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import "reflect-metadata";
 import { registerControllers } from "./helpers.js";
 import {
-  ContextService,
   Controller,
   Get,
   Parameter,
@@ -11,20 +10,14 @@ import {
   Req,
   Service,
   RequestStore,
-  Ctx,
+  OnServiceInit,
 } from "./index.js";
-import crypto from "crypto";
-import { JobScheduler, Worker } from "./controller/controller.js";
+import { JobScheduler, Worker, Cache } from "./controller/controller.js";
 import { InjectQueue, Job } from "./controller/params.js";
 import { Queue } from "bullmq";
-
-const a = new Uint8Array(32);
-
-const secret = crypto.createHash("sha1").update(a).digest("hex");
-
-console.log(
-  `otpauth://totp/MUBEA:tganzhorn@gmail.com?secret=${secret.toUpperCase()}&issuer=MUBEA&algorithm=SHA1&digits=6&period=30`
-);
+import { createCache } from "cache-manager";
+import { Keyv } from "keyv";
+import KeyvRedis from "@keyv/redis";
 
 const fastify = Fastify({
   logger: true,
@@ -39,9 +32,13 @@ export class TestService3 {
   }
 }
 
-@Service([ContextService])
-export class TestService2 {
-  constructor(private contextService: ContextService) {}
+@Service([])
+export class TestService2 implements OnServiceInit {
+  constructor() {}
+
+  async onServiceInit() {
+    console.log("INITIALIZED");
+  }
 
   getWorld() {
     return "World";
@@ -57,17 +54,27 @@ export class TestService extends RequestStore<{ counter: number }> {
     super({ counter: 0 });
   }
 
+  globalCounter = 0;
+
   getGreeting() {
     return this.testService2.getWorld() + " " + this.testService3.getHello();
   }
 }
 
-@Controller("/events", [TestService, ContextService])
+@Controller("/events", [TestService])
 export class FastifyRouter {
-  constructor(
-    private testService: TestService,
-    private contextService: ContextService
-  ) {}
+  constructor(private testService: TestService) {}
+
+  @Cache({ ttl: 1000 })
+  @Get("/cached")
+  async cached() {
+    return this.testService.globalCounter++;
+  }
+
+  @Get("/uncached")
+  async uncached() {
+    return this.testService.globalCounter++;
+  }
 
   @Get("/:id")
   async test(
@@ -101,6 +108,9 @@ export class FastifyRouter {
       host: "localhost",
       port: 6379,
     },
+    cache: createCache({
+      stores: [new Keyv({ store: new KeyvRedis("redis://localhost:6379") })],
+    }),
   });
 
   await fastify.listen({

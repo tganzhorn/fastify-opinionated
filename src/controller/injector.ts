@@ -36,6 +36,9 @@ export function createInjectorFn(routeCtx: RouteCtx) {
       case "job":
         selectors.push(`ctx.job`);
         break;
+      case "cache":
+        selectors.push("ctx.cache");
+        break;
       default:
         throw new Error(`No selector for "${JSON.stringify(param)}" found!`);
     }

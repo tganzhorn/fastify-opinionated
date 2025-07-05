@@ -19,14 +19,17 @@ import {
   All,
   RequestStore,
   registerControllers,
-  ContextService,
   Ctx,
   JobScheduler,
   OnServiceInit,
+  Cache,
+  InjectCache,
   Sse,
   Worker,
+  InjectQueue,
+  Job,
 } from "../dist/index.js";
-// } from "../src/index"
+// } from "../src/index";
 import assert from "node:assert";
 
 describe("Integration tests", async () => {
@@ -39,6 +42,8 @@ describe("Integration tests", async () => {
     getGreeting() {
       return "Hello, world!";
     }
+
+    cachedCounter = 0;
 
     workerCounter = 0;
     testWorker() {
@@ -137,6 +142,12 @@ describe("Integration tests", async () => {
     @Post("/headers")
     async headers(@Headers() headers: { authorization: string }) {
       return headers.authorization;
+    }
+
+    @Cache({ ttl: 1000 })
+    @Get("/cached")
+    async cached() {
+      return this.testService.cachedCounter++;
     }
 
     @Post("/schema")
@@ -302,6 +313,22 @@ describe("Integration tests", async () => {
       parseFloat(response.body) > 0,
       `Response was ${response.body} > 0`
     );
+  });
+
+  await it("should cache", async () => {
+    const response1 = await promisifiedInject({
+      method: "GET",
+      url: "/test/cached",
+    });
+
+    assert.strictEqual(response1.body, "0");
+
+    const response2 = await promisifiedInject({
+      method: "GET",
+      url: "/test/cached",
+    });
+
+    assert.strictEqual(response2.body, "0");
   });
 
   for (const method of [

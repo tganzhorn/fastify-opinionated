@@ -29,7 +29,7 @@ Services encapsulate business logic and reusable operations.
 ### 1. Install
 
 ```bash
-npm install fastify your-controller-lib
+npm install @tganzhorn/fastify-modular
 ```
 
 ---
@@ -37,7 +37,7 @@ npm install fastify your-controller-lib
 ### 2. Define a Service
 
 ```ts
-import { Service } from "your-controller-lib";
+import { Service } from "@tganzhorn/fastify-modular";
 
 @Service([])
 class CounterService {
@@ -51,7 +51,7 @@ class CounterService {
 #### Per-request scoped service:
 
 ```ts
-import { Service, RequestStore } from "your-controller-lib";
+import { Service, RequestStore } from "@tganzhorn/fastify-modular";
 
 @Service([])
 class RequestScopedService extends RequestStore<{ counter: number }> {
@@ -70,7 +70,13 @@ class RequestScopedService extends RequestStore<{ counter: number }> {
 ### 3. Define a Controller
 
 ```ts
-import { Controller, Get, Post, Body, Parameter } from "your-controller-lib";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Parameter,
+} from "@tganzhorn/fastify-modular";
 
 @Controller("/counter", [CounterService])
 class CounterController {
@@ -99,7 +105,7 @@ class CounterController {
 
 ```ts
 import Fastify from "fastify";
-import { registerControllers } from "your-controller-lib";
+import { registerControllers } from "@tganzhorn/fastify-modular";
 
 const app = Fastify();
 
@@ -140,7 +146,7 @@ await app.listen({ port: 3000 });
 | `@Req()`         | Raw FastifyRequest  |
 | `@Rep()`         | Raw FastifyReply    |
 | `@Raw()`         | `{ req, res }` pair |
-| `@Ctx()`         | ContextService data |
+| `@Ctx()`         | Context data        |
 | `@Job()`         | BullMq job          |
 | `@InjectQueue()` | BullMq queue        |
 
@@ -171,7 +177,7 @@ validate(@Body() body: { test: string }) {
 Implement `OnServiceInit` for async setup logic:
 
 ```ts
-import { OnServiceInit } from "your-controller-lib";
+import { OnServiceInit } from "@tganzhorn/fastify-modular";
 
 class InitService implements OnServiceInit {
   initialized = false;
@@ -214,6 +220,44 @@ Registers all provided controllers and their workers.
 
 - `controllers: Class[]` – list of controllers to register
 - `bullMqConnection: { host: string; port: number }` – Redis config for BullMQ
+
+---
+
+## Code generation
+
+### Usage
+
+```bash
+fastify-modular create <component> <name>
+```
+
+> - \<component\>: Type of component to create. Must be either service or controller.
+> - \<name\>: The name of the component (e.g., user, auth).
+
+Example:
+
+```bash
+fastify-modular create controller user
+fastify-modular create service auth
+```
+
+This will generate files like:
+
+src/user/user.controller.ts
+
+src/auth/auth.service.ts
+
+### Configuration
+
+You can customize the output folder and folder structure by creating a .fastify-modular.rc.json file in your project root:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/tganzhorn/fastify-opinionated/refs/heads/main/fastify-modular.rc.schema.json",
+  "root": "/src",
+  "createSubFolders": true
+}
+```
 
 ---
 
