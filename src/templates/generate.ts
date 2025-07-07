@@ -84,8 +84,6 @@ program
       recursive: true,
     });
 
-    console.log(resolve(join(cwd(), ...path)));
-
     await writeFile(
       join(resolve(join(cwd(), ...path, `${lname}.${component}.ts`)))
         .split(sep)
