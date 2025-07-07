@@ -100,7 +100,7 @@ export function registerControllers<
                       ctx
                     )();
                   },
-              { connection: bullMqConnection }
+              { connection: bullMqConnection, ...routerCtx.workerOpts }
             );
 
             for (const eventHandle of routerCtx.eventHandlers) {

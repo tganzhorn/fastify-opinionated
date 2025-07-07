@@ -37,7 +37,9 @@ export type RouteCtx =
       method: "WORKER";
       name: string;
       url?: URL | string;
-      workerOpts?: WorkerOptions;
+      workerOpts?: Omit<WorkerOptions, "connection"> & {
+        connection?: WorkerOptions["connection"];
+      };
       jobSchedulers: Parameters<Queue["upsertJobScheduler"]>[];
       propertyKey: string;
       eventHandlers: Parameters<BullMqWorker["on"]>[];
@@ -312,7 +314,9 @@ export function Sse(path: Path, opts: RouteShorthandOptions = {}) {
 export function Worker(
   name: string,
   url?: URL | string,
-  workerOpts?: WorkerOptions
+  workerOpts?: Omit<WorkerOptions, "connection"> & {
+    connection?: WorkerOptions["connection"];
+  }
 ) {
   return (
     target: object,
