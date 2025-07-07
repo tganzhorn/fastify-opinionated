@@ -17,6 +17,8 @@ export {
   Req,
   Sse,
   Schema,
+  OnEvent,
+  InjectContext,
   JobScheduler,
   Job,
   Cache,
