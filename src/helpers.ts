@@ -81,23 +81,25 @@ export function registerControllers<
 
             const worker = new Worker(
               routerCtx.name,
-              async (job) => {
-                const ctx = createCtx(
-                  null,
-                  null,
-                  routerCtx,
-                  queues,
-                  job,
-                  cache
-                );
+              routerCtx.url
+                ? routerCtx.url
+                : async (job) => {
+                    const ctx = createCtx(
+                      null,
+                      null,
+                      routerCtx,
+                      queues,
+                      job,
+                      cache
+                    );
 
-                asyncLocalStorage.enterWith(ctx);
+                    asyncLocalStorage.enterWith(ctx);
 
-                await injectorFn(
-                  controller[routerCtx.propertyKey].bind(controller),
-                  ctx
-                )();
-              },
+                    await injectorFn(
+                      controller[routerCtx.propertyKey].bind(controller),
+                      ctx
+                    )();
+                  },
               { connection: bullMqConnection }
             );
 

@@ -36,6 +36,7 @@ export type RouteCtx =
   | {
       method: "WORKER";
       name: string;
+      url?: URL | string;
       workerOpts?: WorkerOptions;
       jobSchedulers: Parameters<Queue["upsertJobScheduler"]>[];
       propertyKey: string;
@@ -308,7 +309,11 @@ export function Sse(path: Path, opts: RouteShorthandOptions = {}) {
  * @param name - The name of the worker (queue name).
  * @param workerOpts - Optional BullMQ Worker options.
  */
-export function Worker(name: string, workerOpts?: WorkerOptions) {
+export function Worker(
+  name: string,
+  url?: URL | string,
+  workerOpts?: WorkerOptions
+) {
   return (
     target: object,
     propertyKey: string,
@@ -355,6 +360,7 @@ export function Worker(name: string, workerOpts?: WorkerOptions) {
       method: "WORKER",
       propertyKey,
       name,
+      url,
       jobSchedulers: [],
       workerOpts,
       eventHandlers: [],
