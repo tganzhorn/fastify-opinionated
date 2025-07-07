@@ -69,6 +69,12 @@ type CacheParam = {
   methodName: string;
 };
 
+type OnEventParam = {
+  type: "onEvent";
+  methodName: string;
+  event: string;
+};
+
 /**
  * @function Body
  * @description Decorator that injects the parsed HTTP request body into the controller method parameter.

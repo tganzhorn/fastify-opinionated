@@ -17,20 +17,20 @@ export type Constructable = new (...args: any[]) => any;
 /**
  * @function registerControllers
  * @description Registers controller classes into a Fastify instance. Handles route registration and optional BullMQ worker/job queue integration.
- * 
+ *
  * - Extracts metadata from each controller.
  * - Registers RESTful routes with Fastify.
  * - Sets up BullMQ workers for background jobs.
  * - Adds optional caching via `cache-manager`.
- * 
+ *
  * @template ControllerType - A constructor for a controller class.
- * 
+ *
  * @param fastify - The Fastify instance to register routes and workers on.
  * @param options - Configuration object:
  * @param options.controllers - Array of controller class constructors.
  * @param options.bullMqConnection - (Optional) BullMQ Redis connection options for job processing.
  * @param options.cache - (Optional) A `cache-manager` instance for route-level response caching.
- * 
+ *
  * @throws If a controller uses `@Worker` but `bullMqConnection` is not provided.
  */
 export function registerControllers<
@@ -79,7 +79,7 @@ export function registerControllers<
 
             const injectorFn = createInjectorFn(routerCtx);
 
-            new Worker(
+            const worker = new Worker(
               routerCtx.name,
               async (job) => {
                 const ctx = createCtx(
@@ -100,6 +100,10 @@ export function registerControllers<
               },
               { connection: bullMqConnection }
             );
+
+            for (const eventHandle of routerCtx.eventHandlers) {
+              worker.on(...eventHandle);
+            }
 
             continue;
           }
@@ -126,15 +130,25 @@ export function registerControllers<
           | null = null;
 
         if (routerCtx.cache)
-          cachedFunction = async (request, reply) =>
-            await cache.wrap(
+          cachedFunction = async (request, reply) => {
+            const ctx = createCtx(
+              request,
+              reply,
+              routerCtx,
+              queues,
+              null,
+              cache
+            );
+
+            return await cache.wrap(
               `${rootPath}${routerCtx.path === "/" ? "" : routerCtx.path}${
-                routerCtx.cache?.createKey?.(request) ?? ""
+                routerCtx.cache?.createKey?.(ctx) ?? ""
               }`,
               () => requestFn(request, reply),
               routerCtx.cache?.ttl,
               routerCtx.cache?.refreshThreshold
             );
+          };
 
         const payload = [
           rootPath + (routerCtx.path === "/" ? "" : routerCtx.path),

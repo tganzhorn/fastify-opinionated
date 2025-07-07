@@ -3,6 +3,7 @@ import { FastifyRequest, FastifySchema, RouteShorthandOptions } from "fastify";
 import { DEPS_CTX_SYMBOL, type DepsCtx } from "../depsCtx.js";
 import type { Constructable } from "../helpers.js";
 import type { Param } from "./params.js";
+import { Ctx } from "../ctx.js";
 
 export const CONTROLLER_PATH = "controller:path";
 export const CONTROLLER_CONFIG = "controller:config";
@@ -28,7 +29,7 @@ export type RouteCtx =
       cache?: {
         ttl?: number;
         refreshThreshold?: number;
-        createKey?: (request: FastifyRequest) => string;
+        createKey?: (ctx: Ctx) => string;
       };
       params: Param[];
     }
@@ -38,6 +39,7 @@ export type RouteCtx =
       workerOpts?: WorkerOptions;
       jobSchedulers: Parameters<Queue["upsertJobScheduler"]>[];
       propertyKey: string;
+      eventHandlers: Parameters<BullMqWorker["on"]>[];
       params: Param[];
     };
 
@@ -355,12 +357,39 @@ export function Worker(name: string, workerOpts?: WorkerOptions) {
       name,
       jobSchedulers: [],
       workerOpts,
+      eventHandlers: [],
       params,
     };
 
     Reflect.defineMetadata(
       `${CONTROLLER_PATH}:${propertyKey}`,
       routeCtx,
+      target
+    );
+  };
+}
+
+export function OnEvent<W extends BullMqWorker>(...args: Parameters<W["on"]>) {
+  return (
+    target: object,
+    propertyKey: string,
+    descriptor: TypedPropertyDescriptor<(...args: any[]) => any>
+  ) => {
+    const ctx = Reflect.getMetadata(
+      `${CONTROLLER_PATH}:${String(propertyKey)}`,
+      target
+    );
+
+    if (!ctx || ctx?.method !== "WORKER")
+      throw new Error(
+        "OnEvent decorator does only work above Worker decorator!"
+      );
+
+    ctx.eventHandlers.push(args);
+
+    Reflect.defineMetadata(
+      `${CONTROLLER_PATH}:${String(propertyKey)}`,
+      ctx,
       target
     );
   };

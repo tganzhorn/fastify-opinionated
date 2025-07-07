@@ -11,6 +11,6 @@ export const tsup: Options = {
   bundle: true,
   clean: true,
   treeshake: true,
-  entry: ["src/index.ts", /**"src/templates/generate.ts"*/],
+  entry: ["src/index.ts", "src/templates/generate.ts"],
   noExternal: [],
 };

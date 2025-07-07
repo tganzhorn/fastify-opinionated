@@ -12,10 +12,9 @@ import {
   RequestStore,
   OnServiceInit,
 } from "./index.js";
-import { JobScheduler, Worker, Cache } from "./controller/controller.js";
+import { JobScheduler, Worker, Cache, OnEvent } from "./controller/controller.js";
 import { InjectQueue, Job } from "./controller/params.js";
 import { Queue } from "bullmq";
-import { createCache } from "cache-manager";
 
 const fastify = Fastify({
   logger: true,
@@ -91,7 +90,7 @@ export class FastifyRouter {
       hello: this.testService.getGreeting(),
     });
   }
-
+  
   @JobScheduler("scheduler", { every: 5000 })
   @Worker("test")
   async allesKlar(@InjectQueue("test") queue: Queue, @Job() job: any) {
