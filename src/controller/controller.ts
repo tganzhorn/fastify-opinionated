@@ -1,4 +1,11 @@
-import type { Queue, WorkerOptions, Worker as BullMqWorker } from "bullmq";
+import type {
+  Queue,
+  WorkerOptions,
+  Worker as BullMqWorker,
+  WorkerListener,
+  Job,
+  SandboxedJob,
+} from "bullmq";
 import { FastifyRequest, FastifySchema, RouteShorthandOptions } from "fastify";
 import { DEPS_CTX_SYMBOL, type DepsCtx } from "../depsCtx.js";
 import type { Constructable } from "../helpers.js";
@@ -17,6 +24,11 @@ export type ControllerCtx = {
   rootPath: string;
   routerCtxs: Map<string, RouteCtx>;
 };
+
+export type WorkerEventHandler<J extends Job | SandboxedJob, Controller> = (
+  event: keyof WorkerListener,
+  listener: (controller: Controller, job: J) => void
+) => void;
 
 export type RouteCtx =
   | {
@@ -42,7 +54,7 @@ export type RouteCtx =
       };
       jobSchedulers: Parameters<Queue["upsertJobScheduler"]>[];
       propertyKey: string;
-      eventHandlers: Parameters<BullMqWorker["on"]>[];
+      eventHandlers: Parameters<WorkerEventHandler<any, any>>[];
       params: Param[];
     };
 
@@ -379,7 +391,9 @@ export function Worker(
   };
 }
 
-export function OnEvent<W extends BullMqWorker>(...args: Parameters<W["on"]>) {
+export function OnEvent<J extends SandboxedJob, Controller>(
+  ...args: Parameters<WorkerEventHandler<J, Controller>>
+) {
   return (
     target: object,
     propertyKey: string,

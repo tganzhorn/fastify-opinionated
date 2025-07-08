@@ -104,7 +104,8 @@ export function registerControllers<
             );
 
             for (const eventHandle of routerCtx.eventHandlers) {
-              worker.on(...eventHandle);
+              const [key, handle] = eventHandle;
+              worker.on(key, (job: any) => handle(controller, job));
             }
 
             continue;

@@ -1,6 +1,6 @@
 {
   "name": "@tganzhorn/fastify-modular",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "repository": {
     "type": "git",
     "url": "https://github.com/tganzhorn/fastify-opinionated.git"
@@ -13,10 +13,11 @@
   "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "build": "tsup src/index.ts --dts",
+    "build": "tsup",
     "dev": "tsx src/main.ts",
     "test": "npx swc tests -d . && node --test",
-    "generate": "plop --plopfile=./dist/templates/plopfile.js"
+    "generate": "plop --plopfile=./dist/templates/plopfile.js",
+    "prepublish": "build"
   },
   "keywords": [
     "fastify",
