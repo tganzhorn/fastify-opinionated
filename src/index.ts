@@ -30,3 +30,8 @@ export { Service, type OnServiceInit } from "./service/service.js";
 export { registerControllers } from "./helpers.js";
 export { type Ctx, ContextService } from "./ctx.js";
 export { RequestStore } from "./requestStore.js";
+export {
+  FastifyModularError,
+  isFastifyModularError,
+  handleFastifyError,
+} from "./errors.js";

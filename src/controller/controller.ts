@@ -1,7 +1,6 @@
 import type {
   Queue,
   WorkerOptions,
-  Worker as BullMqWorker,
   WorkerListener,
   Job,
   SandboxedJob,

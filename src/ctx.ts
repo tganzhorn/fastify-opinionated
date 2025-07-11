@@ -1,4 +1,4 @@
-import type { FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { RouteCtx } from "./controller/controller.js";
 import { Job, Queue } from "bullmq";
 import { Cache } from "cache-manager";
@@ -13,15 +13,34 @@ export function createCtx(
   routerCtx: RouteCtx,
   queues: Map<string, Queue>,
   job: Job | null,
-  cache: Cache
+  cache: Cache,
+  fastify: FastifyInstance
 ) {
   return {
-    request,
-    reply,
-    routerCtx,
-    queues,
-    job,
-    cache,
+    get cache() {
+      return cache;
+    },
+    get fastify() {
+      return fastify;
+    },
+    get routerCtx() {
+      return routerCtx;
+    },
+    get queues() {
+      return queues;
+    },
+    get request() {
+      if (!request) throw new Error("Request is not defined in ctx!");
+      return request;
+    },
+    get reply() {
+      if (!reply) throw new Error("Reply is not defined in ctx!");
+      return reply;
+    },
+    get job() {
+      if (!job) throw new Error("Job is not defined in ctx!");
+      return job;
+    },
   };
 }
 

@@ -1,4 +1,5 @@
 import { ConnectionOptions, Queue, Worker } from "bullmq";
+import { Cache, createCache } from "cache-manager";
 import {
   FastifyInstance,
   FastifyReply,
@@ -10,7 +11,7 @@ import { ControllerCtx } from "./controller/controller.js";
 import { createInjectorFn } from "./controller/injector.js";
 import { createCtx } from "./ctx.js";
 import { buildControllers } from "./di.js";
-import { Cache, createCache } from "cache-manager";
+import { fastifyErrorResponses, handleFastifyError } from "./errors.js";
 
 export type Constructable = new (...args: any[]) => any;
 
@@ -69,43 +70,87 @@ export function registerControllers<
             let queue = queues.get(routerCtx.name);
 
             if (!queue) {
-              queue = new Queue(routerCtx.name);
+              queue = new Queue(routerCtx.name, {
+                connection: bullMqConnection,
+              });
               queues.set(routerCtx.name, queue);
             }
 
             for (const jobScheduler of routerCtx.jobSchedulers) {
-              queue.upsertJobScheduler(...jobScheduler);
+              try {
+                queue.upsertJobScheduler(...jobScheduler);
+              } catch (e) {
+                fastify.log.error({ err: e, scheduler: jobScheduler });
+                throw e;
+              }
             }
 
             const injectorFn = createInjectorFn(routerCtx);
 
-            const worker = new Worker(
-              routerCtx.name,
-              routerCtx.url
-                ? routerCtx.url
-                : async (job) => {
-                    const ctx = createCtx(
-                      null,
-                      null,
-                      routerCtx,
-                      queues,
-                      job,
-                      cache
-                    );
+            let worker: Worker;
 
-                    asyncLocalStorage.enterWith(ctx);
+            try {
+              worker = new Worker(
+                routerCtx.name,
+                routerCtx.url
+                  ? routerCtx.url
+                  : async (job) => {
+                      try {
+                        const ctx = createCtx(
+                          null,
+                          null,
+                          routerCtx,
+                          queues,
+                          job,
+                          cache,
+                          fastify
+                        );
 
-                    await injectorFn(
-                      controller[routerCtx.propertyKey].bind(controller),
-                      ctx
-                    )();
-                  },
-              { connection: bullMqConnection, ...routerCtx.workerOpts }
-            );
+                        asyncLocalStorage.enterWith(ctx);
+
+                        await injectorFn(
+                          controller[routerCtx.propertyKey].bind(controller),
+                          ctx
+                        )();
+                      } catch (e) {
+                        fastify.log.error({
+                          err: e,
+                          queue: routerCtx.name,
+                          jobId: job.id,
+                          type: "WORKER",
+                        });
+                      }
+                    },
+                { connection: bullMqConnection, ...routerCtx.workerOpts }
+              );
+            } catch (err) {
+              fastify.log.error({
+                err,
+                queue: routerCtx.name,
+                type: "WORKER_CONSTRUCTION",
+              });
+              throw new Error(
+                `Failed to construct worker for queue "${routerCtx.name}": ${
+                  (err as { message?: string })?.message
+                }`
+              );
+            }
 
             for (const eventHandle of routerCtx.eventHandlers) {
               const [key, handle] = eventHandle;
-              worker.on(key, (job: any) => handle(controller, job));
+              worker.on(key, (job: any) => {
+                try {
+                  handle(controller, job);
+                } catch (e) {
+                  fastify.log.error({
+                    err: e,
+                    type: "WORKER_EVENT",
+                    queue: routerCtx.name,
+                    event: key,
+                    jobId: job?.id,
+                  });
+                }
+              });
             }
 
             continue;
@@ -114,62 +159,98 @@ export function registerControllers<
 
         const injectorFn = createInjectorFn(routerCtx);
 
+        const routePath =
+          rootPath + (routerCtx.path === "/" ? "" : routerCtx.path);
+
         const requestFn = async (
           request: FastifyRequest,
           reply: FastifyReply
         ) => {
-          const ctx = createCtx(request, reply, routerCtx, queues, null, cache);
+          const ctx = createCtx(
+            request,
+            reply,
+            routerCtx,
+            queues,
+            null,
+            cache,
+            fastify
+          );
 
           asyncLocalStorage.enterWith(ctx);
 
-          return await injectorFn(
-            controller[routerCtx.propertyKey].bind(controller),
-            ctx
-          );
+          try {
+            return await injectorFn(
+              controller[routerCtx.propertyKey].bind(controller),
+              ctx
+            );
+          } catch (e) {
+            handleFastifyError(e, reply);
+            fastify.log.error({
+              err: e,
+              route: routePath,
+              id: request.id,
+              method: request.method,
+              type: "ROUTE",
+            });
+          }
         };
 
-        let cachedFunction:
+        let safeCachedFunction:
           | ((request: FastifyRequest, reply: FastifyReply) => Promise<any>)
           | null = null;
 
         if (routerCtx.cache)
-          cachedFunction = async (request, reply) => {
+          safeCachedFunction = async (request, reply) => {
             const ctx = createCtx(
               request,
               reply,
               routerCtx,
               queues,
               null,
-              cache
+              cache,
+              fastify
             );
 
-            return await cache.wrap(
-              `${rootPath}${routerCtx.path === "/" ? "" : routerCtx.path}${
-                routerCtx.cache?.createKey?.(ctx) ?? ""
-              }`,
-              () => requestFn(request, reply),
-              routerCtx.cache?.ttl,
-              routerCtx.cache?.refreshThreshold
-            );
+            const key = `${rootPath}${
+              routerCtx.path === "/" ? "" : routerCtx.path
+            }${routerCtx.cache?.createKey?.(ctx) ?? ""}`;
+
+            try {
+              return await cache.wrap(
+                key,
+                () => requestFn(request, reply),
+                routerCtx.cache?.ttl,
+                routerCtx.cache?.refreshThreshold
+              );
+            } catch (err) {
+              fastify.log.error({ err, key, type: "CACHE" });
+              return requestFn(request, reply);
+            }
           };
 
         const payload = [
-          rootPath + (routerCtx.path === "/" ? "" : routerCtx.path),
+          routePath,
           routerCtx.opts
             ? {
                 ...routerCtx.opts,
                 schema: {
                   tags: [rootPath],
-                  ...routerCtx.schema,
+                  response: {
+                    ...(routerCtx.schema?.response ?? {}),
+                    ...fastifyErrorResponses,
+                  },
                 } as FastifySchema,
               }
             : {
                 schema: {
                   tags: [rootPath],
-                  ...routerCtx.schema,
+                  response: {
+                    ...(routerCtx.schema?.response ?? {}),
+                    ...fastifyErrorResponses,
+                  },
                 } as FastifySchema,
               },
-          routerCtx.cache ? cachedFunction! : requestFn,
+          routerCtx.cache ? safeCachedFunction! : requestFn,
         ] as const;
 
         switch (routerCtx.method) {
