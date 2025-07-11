@@ -38,7 +38,7 @@ export function buildQueues<ControllerType extends new (...args: any[]) => any>(
   for (const controller of controllers) {
     const { routerCtxs } = Reflect.getMetadata(
       "controller:config",
-      controller
+      controller.prototype
     ) as ControllerCtx;
 
     for (const [, routerCtx] of routerCtxs.entries()) {
