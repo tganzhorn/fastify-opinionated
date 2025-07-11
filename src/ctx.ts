@@ -5,12 +5,15 @@ import { Cache } from "cache-manager";
 import { Service } from "./index.js";
 import { getAsyncLocalStorage } from "./asyncLocalStorage.js";
 
+/**
+ * Note! Only cache fastify and queues are available in constructors!
+ */
 export type Ctx = ReturnType<typeof createCtx>;
 
 export function createCtx(
   request: FastifyRequest | null,
   reply: FastifyReply | null,
-  routerCtx: RouteCtx,
+  routerCtx: RouteCtx | null,
   queues: Map<string, Queue>,
   job: Job | null,
   cache: Cache,
@@ -24,10 +27,19 @@ export function createCtx(
       return fastify;
     },
     get routerCtx() {
+      if (!routerCtx) throw new Error("RouterCtx is not defined in ctx!");
       return routerCtx;
     },
     get queues() {
-      return queues;
+      return {
+        get<Q extends Queue>(name: string): Q {
+          const queue = queues.get(name);
+
+          if (!queue) throw new Error(`No queue named ${queue} found!`);
+
+          return queue as Q;
+        },
+      };
     },
     get request() {
       if (!request) throw new Error("Request is not defined in ctx!");

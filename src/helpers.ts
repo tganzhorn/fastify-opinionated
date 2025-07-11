@@ -34,7 +34,7 @@ export type Constructable = new (...args: any[]) => any;
  *
  * @throws If a controller uses `@Worker` but `bullMqConnection` is not provided.
  */
-export function registerControllers<
+export async function registerControllers<
   ControllerType extends new (...args: any[]) => any
 >(
   fastify: FastifyInstance,
@@ -50,7 +50,11 @@ export function registerControllers<
 ) {
   const queues = buildQueues(controllers, bullMqConnection);
 
-  const builtControllers = buildControllers(controllers);
+  const ctx = createCtx(null, null, null, queues, null, cache, fastify);
+
+  const builtControllers = asyncLocalStorage.run(ctx, () =>
+    buildControllers(controllers)
+  );
 
   for (const controller of builtControllers) {
     fastify.register((fastify) => {
