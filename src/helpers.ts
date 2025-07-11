@@ -235,21 +235,21 @@ export function registerControllers<
                 ...routerCtx.opts,
                 schema: {
                   tags: [rootPath],
+                  ...routerCtx.schema,
                   response: {
                     ...(routerCtx.schema?.response ?? {}),
                     ...fastifyErrorResponses,
                   },
-                  ...routerCtx.schema,
                 } as FastifySchema,
               }
             : {
                 schema: {
                   tags: [rootPath],
+                  ...routerCtx.schema,
                   response: {
                     ...(routerCtx.schema?.response ?? {}),
                     ...fastifyErrorResponses,
                   },
-                  ...routerCtx.schema,
                 } as FastifySchema,
               },
           routerCtx.cache ? safeCachedFunction! : requestFn,
