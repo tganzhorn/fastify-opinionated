@@ -1,3 +1,5 @@
+import { ConnectionOptions, Queue } from "bullmq";
+import { ControllerCtx } from "./controller";
 import { Ctx } from "./ctx";
 import { DEPS_CTX_SYMBOL } from "./depsCtx";
 
@@ -25,4 +27,33 @@ export function instantiateWithDeps<T>(
     (instance as any).onServiceInit();
 
   return instance;
+}
+
+export function buildQueues<ControllerType extends new (...args: any[]) => any>(
+  controllers: ControllerType[],
+  bullMqConnection?: ConnectionOptions
+) {
+  const queues = new Map<string, Queue>();
+
+  for (const controller of controllers) {
+    const { routerCtxs } = Reflect.getMetadata(
+      "controller:config",
+      controller
+    ) as ControllerCtx;
+
+    for (const [, routerCtx] of routerCtxs.entries()) {
+      if (routerCtx.method !== "WORKER") continue;
+
+      if (queues.get(routerCtx.name)) continue;
+
+      const queue = new Queue(
+        routerCtx.name,
+        bullMqConnection ? { connection: bullMqConnection } : undefined
+      );
+
+      queues.set(routerCtx.name, queue);
+    }
+  }
+
+  return queues;
 }

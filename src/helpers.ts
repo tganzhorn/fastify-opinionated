@@ -10,7 +10,7 @@ import { asyncLocalStorage } from "./asyncLocalStorage.js";
 import { ControllerCtx } from "./controller/controller.js";
 import { createInjectorFn } from "./controller/injector.js";
 import { createCtx } from "./ctx.js";
-import { buildControllers } from "./di.js";
+import { buildControllers, buildQueues } from "./di.js";
 import { fastifyErrorResponses, handleFastifyError } from "./errors.js";
 
 export type Constructable = new (...args: any[]) => any;
@@ -48,7 +48,7 @@ export function registerControllers<
     cache?: Cache;
   }
 ) {
-  const queues = new Map<string, Queue>();
+  const queues = buildQueues(controllers, bullMqConnection);
 
   const builtControllers = buildControllers(controllers);
 
@@ -69,12 +69,8 @@ export function registerControllers<
 
             let queue = queues.get(routerCtx.name);
 
-            if (!queue) {
-              queue = new Queue(routerCtx.name, {
-                connection: bullMqConnection,
-              });
-              queues.set(routerCtx.name, queue);
-            }
+            if (!queue)
+              throw new Error(`Queue for ${routerCtx.name} not found!`);
 
             for (const jobScheduler of routerCtx.jobSchedulers) {
               try {
