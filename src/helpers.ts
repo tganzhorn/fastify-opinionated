@@ -239,6 +239,7 @@ export function registerControllers<
                     ...(routerCtx.schema?.response ?? {}),
                     ...fastifyErrorResponses,
                   },
+                  ...routerCtx.schema,
                 } as FastifySchema,
               }
             : {
@@ -248,6 +249,7 @@ export function registerControllers<
                     ...(routerCtx.schema?.response ?? {}),
                     ...fastifyErrorResponses,
                   },
+                  ...routerCtx.schema,
                 } as FastifySchema,
               },
           routerCtx.cache ? safeCachedFunction! : requestFn,
