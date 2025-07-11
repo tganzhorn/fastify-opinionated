@@ -34,7 +34,7 @@ export type Constructable = new (...args: any[]) => any;
  *
  * @throws If a controller uses `@Worker` but `bullMqConnection` is not provided.
  */
-export async function registerControllers<
+export function registerControllers<
   ControllerType extends new (...args: any[]) => any
 >(
   fastify: FastifyInstance,
